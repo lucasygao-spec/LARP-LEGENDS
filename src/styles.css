@@ -88,3 +88,20 @@
 .summary .story-description{font-size:15px;overflow-wrap:anywhere}
 .summary .year-result>strong{font-size:32px}
 @media(max-width:600px){.summary .alert-eyebrow{padding:18px 18px 0}.summary .story-card{padding:16px 18px 20px}.summary .story-heading h1{font-size:22px}}
+
+/* Profile refinements from the refinement branch. */
+.profile{align-items:flex-start;gap:12px;padding:12px 14px;min-height:132px}
+.profile .avatar{align-self:flex-start;width:58px;height:58px;padding:0;cursor:pointer;transition:transform .18s,box-shadow .18s}
+.profile .avatar:hover{transform:scale(1.05);box-shadow:0 0 0 3px #0cd0b660,0 3px 14px #002f3780}
+.profile-details{display:grid;flex:1;min-width:0;gap:10px;padding-top:3px}
+.profile-heading,.profile-meter{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1fr);align-items:center;gap:8px;min-width:0}
+.profile h2{min-width:0;font-size:clamp(17px,1.6vw,23px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile .profile-age{min-width:0;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#d9f5e9}
+.profile-meter-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bdebd9;font-size:10px;font-weight:650}
+.profile-level-bar,.profile-month-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;min-width:0}
+.profile-month-bar{grid-template-columns:repeat(var(--month-count),minmax(0,1fr))}
+.profile-level-bar>span,.profile-month-bar>span{height:7px;border-radius:5px;background:#a2d4c44d}
+.profile-level-bar>span.complete,.profile-month-bar>span.complete{background:#42dbb1;box-shadow:0 0 6px #42dbb160}
+.profile-month .profile-meter-label{color:#e5fff7}
+.modal .avatar-picker{grid-template-columns:repeat(3,minmax(0,1fr));max-height:min(60dvh,520px)}
+@media(max-width:760px){.profile{gap:12px;padding:11px 14px}.profile .avatar{width:56px;height:56px}.profile-details{gap:9px}.profile-heading,.profile-meter{grid-template-columns:minmax(0,.85fr) minmax(0,1fr)}.profile h2{font-size:20px}.modal .avatar-picker{grid-template-columns:repeat(2,minmax(0,1fr))}}
