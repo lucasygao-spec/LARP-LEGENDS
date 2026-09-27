@@ -3,7 +3,7 @@ import { Html } from '@react-three/drei';
 import { ExtrudeGeometry, Shape } from 'three';
 
 // A small cream house with a slate gable roof, blue windows, and a planted yard.
-export function UpgradedHome({ position, scale = 1.2, rotation = -0.5 }: { position: [number, number, number]; scale?: number; rotation?: number }) {
+export function UpgradedHome({ position, scale = 1.2, rotation = -0.5, showLabel = true }: { position: [number, number, number]; scale?: number; rotation?: number; showLabel?: boolean }) {
   const walls = useMemo(() => {
     const outline = new Shape();
     outline.moveTo(-1.9, 0); outline.lineTo(1.9, 0); outline.lineTo(1.9, 2.5);
@@ -38,10 +38,10 @@ export function UpgradedHome({ position, scale = 1.2, rotation = -0.5 }: { posit
       </group>)}
       {[-1.9, -1.25, -0.6].map(x => box(`hedge-${x}`, [x, 0.4, 2.05], [0.65, 0.55, 0.6], '#4da66b'))}
     </group>
-    <Html position={[0, scale * 4.6, 0]} center style={{ pointerEvents: 'none' }}>
+    {showLabel && <Html position={[0, scale * 4.6, 0]} center style={{ pointerEvents: 'none' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '10px 17px', borderRadius: 12, border: '1px solid #6793a5', background: '#193746ed', color: '#f4fbff', boxShadow: '0 3px 12px #102a3740', fontSize: 19, fontWeight: 700 }}>
         <svg width="23" height="23" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 1 11h3v10h6v-7h4v7h6V11h3Z" /></svg>Home
       </div>
-    </Html>
+    </Html>}
   </group>;
 }
