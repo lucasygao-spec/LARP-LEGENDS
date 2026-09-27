@@ -59,3 +59,36 @@
 .finances .stat.cash{--balance-color:#13b891}.finances .stat.investment{--balance-color:#a45bea}.finances .stat.debt{--balance-color:#ed515b}.finances .stat.savings{--balance-color:#38a9e1}.finances .stat.emergency{--balance-color:#69c36c}
 .finances .stat.emergency>span>svg{background:linear-gradient(#64e766,#20ba61)}
 @media(max-width:390px){.finances .stat{grid-template-columns:minmax(98px,1fr) minmax(24px,1.25fr) max-content;gap:6px}.finances .stat strong{min-width:52px;font-size:14px}.finances .stat>span{gap:8px;font-size:14px}}
+
+.summary-columns{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:8px 0 20px}
+.summary-section{min-width:0;padding-top:12px;border-top:3px solid var(--summary-color)}
+.summary-section.positive{--summary-color:#168365}.summary-section.learning{--summary-color:#c07834}
+.summary-section h3{margin:0 0 10px;color:#234e47;font-size:16px}
+.summary-section ul{display:grid;gap:10px;margin:0;padding-left:18px;color:#456a60;font-size:13px;line-height:1.55}
+.summary-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));margin:18px 0;padding:12px 0;border-top:1px solid #c7e0d5;border-bottom:1px solid #c7e0d5}
+.summary-metrics>div{display:grid;gap:4px;padding:0 12px}.summary-metrics>div+div{border-left:1px solid #c7e0d5}
+.summary-metrics span{color:#668479;font-size:11px}.summary-metrics strong{color:#234e47;font-size:16px;font-variant-numeric:tabular-nums}
+@media(max-width:560px){.summary-columns{grid-template-columns:1fr;gap:14px}.summary-metrics>div{padding:0 7px}.summary-metrics strong{font-size:13px}}
+.investment-chart{margin:14px 0 18px;padding:13px 15px 8px;border:1px solid #c3e4d6;border-radius:12px;background:#eaf5ef}
+.investment-chart-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.investment-chart-heading h3{font-size:15px;color:#234e47}.investment-chart-heading p{margin-top:3px;color:#668479;font-size:11px}
+.growth-legend{display:flex;flex-wrap:wrap;gap:12px;color:#456a60;font-size:10px}.growth-legend span{display:flex;align-items:center;gap:5px}.growth-legend span:before{content:'';width:12px;height:3px;border-radius:2px;background:var(--series-color)}.portfolio-key{--series-color:#13866e}.contribution-key{--series-color:#7181c7}
+.investment-chart svg{display:block;width:100%;height:154px;margin-top:8px;overflow:visible}.investment-chart svg text{fill:#668479;font-size:9px}.growth-gridline{stroke:#c9ded3;stroke-dasharray:3 4}.portfolio-series,.contribution-series{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:2.5}.portfolio-series{stroke:#13866e}.contribution-series{stroke:#7181c7;stroke-dasharray:5 4}.portfolio-point{fill:#13866e}.contribution-point{fill:#7181c7}.investment-chart .chart-foot{margin:4px 0 0;color:#668479;font-size:10px}
+@media(max-width:560px){.investment-chart{padding:11px 10px 7px}.investment-chart-heading{align-items:flex-start;flex-direction:column;gap:7px}.growth-legend{gap:9px}.investment-chart svg{height:140px}}
+.game-over-banner{display:grid;grid-template-columns:52px minmax(0,1fr) max-content;align-items:center;gap:14px;margin:0 0 12px;padding:16px;border:1px solid #36bda4;border-radius:14px;background:linear-gradient(115deg,#064647,#087c68);color:#f2fffa}
+.game-over-trophy{display:grid;place-items:center;width:48px;height:48px;border:1px solid #f5d16a;border-radius:12px;background:#f5d16a24;color:#ffd96f}
+.game-over-copy>span,.game-over-portfolio>span{font-size:9px;font-weight:800;color:#b8eddd}
+.game-over-copy h3{margin:3px 0;font-size:18px;color:#f5fff9}
+.game-over-copy p{font-size:11px;color:#d0f1e6;line-height:1.4}
+.game-over-portfolio{display:grid;gap:4px;text-align:right}.game-over-portfolio strong{font-size:20px;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap}
+.achievement-row{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 8px}
+.achievement-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border:1px solid #b9d9c9;border-radius:99px;background:#e6f3e9;color:#356451;font-size:10px;font-weight:650}
+@media(max-width:560px){.game-over-banner{grid-template-columns:42px minmax(0,1fr);gap:10px;padding:12px}.game-over-trophy{width:40px;height:40px}.game-over-trophy svg{width:22px}.game-over-copy h3{font-size:16px}.game-over-portfolio{grid-column:2;display:flex;align-items:center;justify-content:space-between;text-align:left;padding-top:7px;border-top:1px solid #ffffff35}.game-over-portfolio strong{font-size:17px}}
+.modal.game-over-modal{width:min(1120px,calc(100% - 28px));max-height:92dvh;padding:18px 20px;border:1px solid #68dfd0;border-radius:18px;background:linear-gradient(135deg,#164f70,#0a777b 54%,#285991);color:#f3fffb;box-shadow:0 24px 90px #001c3dcc}
+.game-over-modal .modal-top{margin-bottom:13px;padding-bottom:11px;border-bottom:1px solid #ffffff32}.game-over-modal .modal-top h2{color:#f5fffc;font-size:18px;letter-spacing:0}.game-over-modal .icon-button{background:#ffffff20;color:#f3fffb}.game-over-modal .icon-button:hover{background:#ffffff35}
+.game-over-main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(260px,.85fr);gap:12px;align-items:stretch}
+.game-over-left,.game-over-side{min-width:0;padding:14px;border:1px solid #ffffff7a;border-radius:13px;background:#eef9f4;color:#234e47}
+.game-over-left .investment-chart{margin:0 0 12px}.game-over-left .summary-columns{gap:14px;margin:0}.game-over-left .summary-section ul{font-size:12px}.game-over-left .fine-print{margin-top:12px;color:#5f8075}
+.game-over-side{display:flex;flex-direction:column;gap:12px;background:#e5f3f4}
+.game-over-player{display:flex;align-items:center;gap:12px;padding-bottom:12px;border-bottom:1px solid #bdd9d5}.game-over-player img{width:68px;height:68px;flex:none;object-fit:cover;border:2px solid #4fc7b1;border-radius:11px;background:#d4e7e5}.game-over-player span,.game-over-achievements h3,.game-over-stats h3{font-size:9px;font-weight:800;color:#528178}.game-over-player h3{margin:2px 0;font-size:19px;color:#1e4e49}.game-over-player p{font-size:11px;color:#577d73}
+.game-over-achievements{padding-bottom:10px;border-bottom:1px solid #bdd9d5}.game-over-achievements h3,.game-over-stats h3{margin:0 0 8px}.game-over-achievements .achievement-row{margin:0}.game-over-stats{display:grid;gap:8px}.game-over-stats>div{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:12px}.game-over-stats>div strong{font-variant-numeric:tabular-nums;color:#214a45}.game-over-modal .continue-summary{width:100%;min-height:46px;margin-top:auto;border-radius:9px;background:linear-gradient(100deg,#14b9a3,#36cfb7);color:#073f43;font-weight:800}
+@media(max-width:760px){.modal.game-over-modal{width:calc(100% - 16px);max-height:94dvh;padding:12px}.game-over-main{grid-template-columns:minmax(0,1fr);gap:10px}.game-over-left,.game-over-side{padding:11px}.game-over-side{gap:9px}.game-over-player img{width:56px;height:56px}}

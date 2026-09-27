@@ -51,7 +51,9 @@ test('direct choices, fullscreen medical alert, ETF investing, result and replay
   await pick(page,'QQQ');await expect(page.locator('.stat.investment')).toContainText('$1,250');await next(page);
   await expect(page.getByRole('heading',{name:'Omg congrats! Your investments grew.'})).toBeVisible();await expect(page.locator('.story-description')).toContainText('$100.00');
   await pick(page,'Continue investing in high risk');await pick(page,'See my result');
-  await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await expect(page.locator('.profile')).toContainText('Month 6');
+  const summary=page.getByRole('dialog',{name:'Investment Summary'});await expect(summary).toBeVisible();await expect(summary.locator('.game-over-banner')).toContainText('RUN COMPLETE');await expect(summary.locator('.game-over-player')).toContainText('Maya');await expect(summary).toContainText('What went well');await expect(summary).toContainText('What to learn next');await expect(summary).toContainText('QQQ');await expect(summary.locator('.investment-chart svg')).toHaveAttribute('role','img');await expect(summary.locator('.growth-legend')).toContainText('Net contributions');
+  await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await expect(page.locator('.profile')).toContainText('Month 6');
+  await page.getByRole('button',{name:'View investment summary'}).click();await expect(summary).toBeVisible();await page.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(page.locator('.stat.investment')).toContainText('$1,600');await expect(page.locator('.stat.debt')).toContainText('$0');
   await page.screenshot({path:'artifacts/pitch-result.png',fullPage:true});
   await pick(page,'Try a different story');await pick(page,'Compare paths');await expect(page.getByRole('dialog')).toContainText('Continue investing in high risk');
@@ -65,7 +67,7 @@ test('mobile alert and university path work without WebGL or storage',async({pag
   await page.screenshot({path:'artifacts/pitch-alert-mobile.png'});
   await decision(page,'Take money from my emergency fund');await decision(page,'Put it in a savings account');
   await pick(page,'Work with an advisor');await pick(page,'FHSA');await pick(page,'XUS');await next(page);
-  await pick(page,'Buy a penthouse in Miami');await pick(page,'See my result');
+  await pick(page,'Buy a penthouse in Miami');await pick(page,'See my result');await page.getByRole('button',{name:'Continue',exact:true}).click();
   await expect(page.getByRole('progressbar',{name:'Miami penthouse goal'})).toBeVisible();
   await expect(page.getByText(/Browser storage is unavailable/)).toBeVisible();await expect(page.locator('.stat.savings')).toContainText('$0');
   await page.screenshot({path:'artifacts/pitch-mobile.png',fullPage:true});
@@ -76,5 +78,5 @@ test('BizTech, late account opening, managed route and VAB',async({page})=>{
   await noWebGL(page);await start(page);await decision(page,'Start working');await decision(page,'Yes — save $200');await decision(page,'Take money from my emergency fund');await decision(page,'Buy BizTech');
   await expect(page.locator('.holdings-list')).toContainText('BizTech (fictional)');await pick(page,'Use a managed investing app');await pick(page,'RRSP');
   await pick(page,'VAB');await expect(page.locator('.profile')).toContainText('Month 5');await next(page);
-  await pick(page,'Invest in low risk');await pick(page,'See my result');await expect(page.locator('.stat.debt')).toContainText('$0');await expect(page.locator('.holdings-list')).toContainText('VAB');
+  await pick(page,'Invest in low risk');await pick(page,'See my result');await page.getByRole('button',{name:'Continue',exact:true}).click();await expect(page.locator('.stat.debt')).toContainText('$0');await expect(page.locator('.holdings-list')).toContainText('VAB');
 });
