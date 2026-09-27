@@ -123,3 +123,62 @@
 @media(max-width:760px){.profile{min-height:0}.profile-month{grid-template-columns:minmax(0,1fr);gap:5px}.profile-month-bar{height:28px}}
 @media(max-width:380px){.profile{min-height:0;padding:6px;border-radius:16px}.profile .avatar{width:40px;height:40px}.profile-details{gap:10px;margin-top:5px}.profile h2{font-size:24px}.profile-age{font-size:14px}.profile-heading,.profile-meter{gap:4px}.profile-meter-label{font-size:10px}.profile-month .profile-meter-label{font-size:12px}.profile-month-bar{height:26px;gap:1px}}
 .profile-context{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;color:#c8eee4;font-size:12px}.profile-context .literacy-badge{margin-top:0}.profile .avatar:focus-visible{outline:3px solid #b7ffde;outline-offset:3px}
+
+/* Results sit over the lower town, with the player's portfolio still in view. */
+.results-storage-note{font-size:12px;line-height:1.5;color:#c4e9df}
+.world-panel.has-summary{--results-height:clamp(330px,46dvh,520px)}
+.has-summary .world-view{bottom:calc(var(--results-height) + 12px)}
+.has-summary .world-status{bottom:12px}
+.has-summary .text-town{inset:80px 25px 50px}
+.results-summary{position:absolute;z-index:13;left:22px;right:22px;bottom:28px;height:var(--results-height);display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);gap:16px;align-items:stretch;outline:none;color:#174e56;color-scheme:light}
+.investment-chart,.monthly-summary{min-width:0;min-height:0;border:1px solid #f1ffff;border-radius:22px;background:linear-gradient(140deg,#f0fffff5,#e4f5f5f2);box-shadow:0 12px 35px #03464e18;backdrop-filter:blur(14px)}
+.investment-chart{display:flex;flex-direction:column;padding:21px 18px 16px}
+.investment-chart-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.investment-chart-heading h2,.monthly-summary-heading h2{display:flex;align-items:center;gap:10px;font-size:clamp(17px,1.5vw,24px);font-weight:800;letter-spacing:-.5px}
+.growth-legend{display:flex;flex-wrap:wrap;gap:12px;color:#476c79;font-size:11px}
+.growth-legend span{display:flex;align-items:center;gap:6px}
+.growth-legend span:before{content:'';width:9px;height:9px;border:1.5px solid #28515e;border-radius:50%;background:var(--series-color)}
+.portfolio-key{--series-color:#00ac91}.contribution-key{--series-color:#8a73e8}
+.investment-chart>svg{display:block;width:100%;flex:1;min-height:130px;margin:8px 0}
+.investment-chart svg text{fill:#4b7280;font-size:12px}
+.growth-gridline{stroke:#cce4e6;stroke-dasharray:7 6}
+.portfolio-series,.contribution-series{fill:none;stroke-linecap:round;stroke-linejoin:round;stroke-width:3}
+.portfolio-series{stroke:#008e7d}.contribution-series{stroke:#9380df;stroke-dasharray:6 6;stroke-width:2}
+.portfolio-point{fill:#00ac91;stroke:#235e67;stroke-width:1.5}.contribution-point{fill:#9380df}
+.growth-market-change{display:flex;align-items:center;gap:9px;padding:12px;border-radius:13px;background:#d9edef;color:#316c75;font-size:12px;line-height:1.4}
+.growth-market-change strong{white-space:nowrap;font-weight:650}.growth-market-change.negative{color:#9c4051;background:#f7e5e8}
+.growth-note{margin-top:8px;font-size:11px;line-height:1.4;color:#526e79}
+.monthly-summary{display:flex;flex-direction:column;padding:18px 14px 12px}
+.monthly-summary-heading{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:12px}
+.monthly-summary-heading h2{font-size:clamp(16px,1.25vw,21px);gap:8px}
+.monthly-summary-heading .icon-button{width:27px;height:27px;color:#3c7278;background:transparent}
+.monthly-summary-heading .icon-button:hover{background:#cde8e7}
+.monthly-summary-content{min-height:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#9dcec7 transparent;display:grid;gap:10px;align-content:start}
+.summary-section{display:flex;align-items:flex-start;gap:9px;min-width:0;padding:12px 10px;border:1px solid #cce8e4;border-radius:16px;background:#e6f5f2}
+.summary-section.learning{background:#fff5e9;border-color:#f3e3ce}
+.summary-icon{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;background:#079d82;color:white}
+.learning .summary-icon{background:#e5a028}
+.summary-section h3{margin:2px 0 7px;font-size:15px;color:#1a635e}
+.summary-section.learning h3{color:#375964}
+.summary-section ul{margin:0;padding-left:16px;color:#355362;font-size:12px;line-height:1.45}
+.summary-section li+li{margin-top:4px}
+.summary-note{font-size:10px;color:#567b80;text-align:center;line-height:1.4}
+@media(min-width:761px) and (max-width:1100px){
+  .results-summary{left:12px;right:12px;gap:10px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .investment-chart{padding:16px 12px}.monthly-summary{padding:14px 10px}
+  .monthly-summary-heading h2{font-size:15px}.monthly-summary-heading h2>svg{display:none}
+  .summary-section{padding:10px 8px;gap:6px}.summary-icon{width:24px;height:24px}.summary-section ul{font-size:11px}.growth-market-change{font-size:11px;padding:9px}
+}
+@media(max-width:760px){
+  .world-panel.has-summary{height:auto;max-height:none;padding-top:340px;overflow:visible}
+  .has-summary .world-view{height:340px;bottom:auto}
+  .has-summary .world-status{bottom:22px}
+  .results-summary{position:relative;left:auto;right:auto;bottom:auto;height:auto;grid-template-columns:minmax(0,1fr);gap:12px;margin:0 12px 56px;scroll-margin-top:12px}
+  .investment-chart{padding:18px 14px 14px}.investment-chart-heading h2{font-size:21px}
+  .investment-chart>svg{flex:none;height:auto;min-height:0;aspect-ratio:570/260;margin:14px 0}
+  .monthly-summary{padding:18px 14px}.monthly-summary-heading h2{font-size:20px}
+  .monthly-summary-content{overflow:visible}.summary-section{padding:14px 12px}.summary-section ul{font-size:13px}.summary-section h3{font-size:16px}
+  .has-summary .simulation-note{bottom:34px}
+}
+
+@media(max-width:760px){.world-panel.has-summary{flex:0 0 auto}.has-summary .results-summary{scroll-margin-top:55px}}

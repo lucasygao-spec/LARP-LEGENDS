@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { motion, MotionConfig, useReducedMotion } from 'motion/react';
-import { ArrowRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, House, Info, RotateCcw, ShieldCheck, Sparkles, Volume2, VolumeX, Wallet, Wrench, X, Landmark, UserRound } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, House, Info, RotateCcw, ShieldCheck, Sparkles, ThumbsUp, Volume2, VolumeX, Wallet, Wrench, X, Landmark, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import story from './data/story.json';
 import { avatars, getAvatar } from './avatarCatalog';
 import type { AvatarId } from './avatarCatalog';
-import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, goalProgress, goalFunds, initialState, money, netWorth, portfolio, totalDebt, RULES } from './engine';
+import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, goalProgress, goalFunds, initialState, money, monthName, netWorth, portfolio, totalDebt, RULES } from './engine';
 import type { Account, GameState } from './engine';
 import { FUNDS, HOLDINGS, METHODS } from './investments';
 import type { Fund } from './investments';
@@ -90,6 +90,26 @@ const activityRows: [string, (s: GameState) => number][] = [
 function hasFinancialUpdate(before: GameState, after: GameState) {
   return [...financialRows, ...activityRows].some(([, value]) => value(before) !== value(after)) || HOLDINGS.some(symbol => before.holdings[symbol] !== after.holdings[symbol]);
 }
+function InvestmentGrowthChart({ state }: { state: GameState }) {
+  const monthly = state.ledger.filter((entry, i, all) => i === all.length - 1 || entry.month !== all[i + 1].month);
+  const points = [{ month: 0, investments: state.ledger[0].investments, contributions: 0 }, ...monthly.map(entry => ({ month: entry.month, investments: entry.investments, contributions: Math.max(0, entry.contributed - entry.withdrawn) }))];
+  const maximum = Math.ceil(Math.max(100, ...points.flatMap(point => [point.investments, point.contributions])) / 100) * 100;
+  const x = (month: number) => 66 + month / story.length * 480;
+  const y = (amount: number) => 218 - amount / maximum * 182;
+  const portfolioPoints = points.map(point => `${x(point.month)},${y(point.investments)}`).join(' ');
+  const contributionPoints = points.map(point => `${x(point.month)},${y(point.contributions)}`).join(' ');
+  return <section className="investment-chart" aria-labelledby="growth-title">
+    <div className="investment-chart-heading"><h2 id="growth-title"><ChartNoAxesCombined size={27} />Portfolio Growth</h2><div className="growth-legend"><span className="portfolio-key">Portfolio value</span><span className="contribution-key">Net contributions</span></div></div>
+    <svg viewBox="0 0 570 260" role="img" aria-label={`Portfolio value ${exactMoney(portfolio(state))}; net contributions ${exactMoney(Math.max(0, state.totalContributed - state.totalWithdrawn))}`}>
+      {[0, 0.5, 1].map(ratio => { const amount = maximum * ratio; const lineY = y(amount); return <g key={ratio}><line x1="66" x2="546" y1={lineY} y2={lineY} className="growth-gridline" /><text x="54" y={lineY + 4} textAnchor="end">{money(amount)}</text></g>; })}
+      {points.map(point => <line key={point.month} x1={x(point.month)} x2={x(point.month)} y1="36" y2="218" className="growth-gridline" />)}
+      <polyline points={portfolioPoints} className="portfolio-series" /><polyline points={contributionPoints} className="contribution-series" />
+      {points.map(point => <g key={point.month}><circle cx={x(point.month)} cy={y(point.contributions)} r="3" className="contribution-point" /><circle cx={x(point.month)} cy={y(point.investments)} r="4.5" className="portfolio-point" tabIndex={0} aria-label={`${monthName(point.month)}: portfolio ${exactMoney(point.investments)}, net contributions ${exactMoney(point.contributions)}`}><title>{`${monthName(point.month)}: portfolio ${exactMoney(point.investments)} · net contributions ${exactMoney(point.contributions)}`}</title></circle><text x={x(point.month)} y="247" textAnchor="middle">{point.month === 0 ? 'Start' : `M${point.month}`}</text></g>)}
+    </svg>
+    <div className={`growth-market-change ${state.monthlyGrowth < 0 ? 'negative' : ''}`}><ChartNoAxesCombined size={19} /><span>Market change this month: <strong>{state.monthlyGrowth >= 0 ? '+' : ''}{exactMoney(state.monthlyGrowth)}</strong></span><Info size={15} aria-label="Market change excludes contributions and withdrawals." /></div>
+    {state.totalWithdrawn > 0 && <p className="growth-note">{exactMoney(state.totalWithdrawn)} moved out of investments into savings. The drop in portfolio value includes this withdrawal.</p>}
+  </section>;
+}
 function FinancialUpdate({ before, after, explanation }: { before: GameState; after: GameState; explanation: string }) {
   const changes = activityRows.map(([label, get]) => ({ label, amount: Math.round((get(after) - get(before)) * 100) / 100 })).filter(row => row.amount !== 0);
   return <section className="financial-update panel-card" aria-label="Latest financial update">
@@ -117,17 +137,54 @@ function HowItWorks({ state }: { state: GameState }) {
     <div><dt>Market source</dt><dd>{state.market.label} · {state.market.asOf}. {state.market.notice} Existing holdings change before each new $250 contribution. A run and its replay use the same frozen sequence.</dd></div>
     <div><dt>Miami goal</dt><dd>The penthouse choice compares cash + general savings + investments with a $1,000,000 goal. Emergency savings are excluded; debt stays visible separately. No property is bought or investments sold. The one-day penthouse rental costs exactly your available cash at that step. It spends that cash in full, with $0 course revenue initially; savings and investments stay untouched. Or keep grinding with your existing portfolio and contribution plan. Both endings stay in Month 6.</dd></div>
     <div><dt>Accounting</dt><dd>Student debt uses a 6% APR ÷ 12. All balances round to cents. Net worth = cash + general savings + emergency savings + investments − all debt. Portfolio = contributions + market change − withdrawals. Rebalancing does not count as a new contribution. Financial effects are symbolic; financial summaries show exact amounts.</dd></div>
-    <div><dt>Controls</dt><dd>Click a choice to update your balances and advance immediately. Your financial update stays in the sidebar, with changed accounts highlighted. Only the final financial summary opens full-screen. Number keys 1–4 also choose immediately; Tab and Enter operate every control. The medical alert fills the screen. The pitch ends after your Month 6 investment decision. Replay and compare with your previous completed pitch. No real accounts or trades are created.</dd></div>
+    <div><dt>Controls</dt><dd>Click a choice to update your balances and advance immediately. Your financial update stays in the sidebar, with changed accounts highlighted. The final financial summary opens full-screen. Choose See my results to view portfolio growth and feedback on your dashboard. Number keys 1–4 also choose immediately; Tab and Enter operate every control. The medical alert fills the screen. The pitch ends after your Month 6 investment decision. Replay and compare with your previous completed pitch. No real accounts or trades are created.</dd></div>
   </dl></>;
 }
 function Compare({ state, previous }: { state: GameState; previous: GameState | null }) {
   const rows: [string, (s: GameState) => number][] = [['Cash', s => s.cash], ['General savings', s => s.savings], ['Emergency fund', s => s.emergencySavings], ['Investments', portfolio], ['Contributed', s => s.totalContributed], ['Withdrawn', s => s.totalWithdrawn], ['Investment growth', s => s.totalMarketChange], ['Debt', totalDebt], ['Net worth', netWorth]];
   return <><p className="modal-intro">See how your choices add up over time.</p>{!previous && <p className="notice">Finish the pitch, then replay to compare two paths.</p>}<table className="compare-table"><thead><tr><th>At a glance</th><th>This run · M{state.month}</th><th>Previous run</th></tr></thead><tbody>{rows.map(([label, get]) => <tr key={label}><th>{label}</th><td>{exactMoney(get(state))}</td><td>{previous ? exactMoney(get(previous)) : '—'}</td></tr>)}<tr><th>Account / goal</th><td>{state.account || 'None'} / {state.goal ? GOALS[state.goal].name : 'Not selected'}</td><td>{previous ? `${previous.account || 'None'} / ${previous.goal ? GOALS[previous.goal].name : 'Not selected'}` : '—'}</td></tr></tbody></table><h3 className="modal-subtitle">Your paths</h3><div className="path-list">{Array.from({length: story.length}, (_, i) => <div key={i}><span>{`M${i + 1}`}</span><p>{state.decisionHistory[i]?.title || 'Still ahead'}</p><p>{previous?.decisionHistory[i]?.title || '—'}</p></div>)}</div><p className="fine-print">This run: {state.market.label} ({state.market.asOf}). Previous: {previous ? `${previous.market.label} (${previous.market.asOf})` : 'none'}. Different data sequences can also affect results.</p></>;
 }
+function InvestmentSummary({ state, onClose }: { state: GameState; onClose: () => void }) {
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    ref.current?.focus({ preventScroll: true });
+    if (window.matchMedia('(max-width: 760px)').matches) ref.current?.scrollIntoView({ block: 'start' });
+  }, []);
+  const choices = new Set(state.decisionHistory.map(decision => decision.choice));
+  const wentWell: string[] = [];
+  const learnNext: string[] = [];
+  if (choices.has('work')) wentWell.push('Avoided tuition debt on the work path.');
+  if (choices.has('save-emergency')) wentWell.push(choices.has('use-emergency') ? 'Used your $200 emergency cushion to cover the medical bill.' : 'Set aside $200 for unexpected costs.');
+  if (state.totalContributed > 0) wentWell.push(`Invested ${money(state.totalContributed)} during your story.`);
+  if (state.method && state.account) wentWell.push('Chose an account and investing approach before selecting a fund.');
+  if (choices.has('ask-mom')) learnNext.push('Your emergency fund was short. Build a cushion for the next surprise.');
+  if (state.holdings.BIZTECH > 0 || choices.has('biztech')) learnNext.push('BizTech put your money in one company. Explore how diversification spreads risk.');
+  if (state.selectedFund === 'QQQ' || choices.has('higher-risk')) learnNext.push('Nasdaq-100 (QQQ) is concentrated. Make sure the risk fits your time horizon.');
+  if (state.selectedFund === 'VAB' || choices.has('lower-risk')) learnNext.push('Bonds lowered risk relative to the other demo funds, but their value can still fall.');
+  if (choices.has('birthday-savings')) learnNext.push('Savings kept your gift accessible; it earns no interest in this demo.');
+  if (choices.has('keep-grinding')) wentWell.push('Kept your portfolio invested while working toward your $1,000,000 goal.');
+  if (choices.has('rent-penthouse')) learnNext.push('The penthouse rental used all your available cash. Course revenue starts at $0, and sales are not guaranteed.');
+  if (state.monthlyGrowth !== 0) learnNext.push(`The market changed your portfolio by ${state.monthlyGrowth > 0 ? '+' : ''}${exactMoney(state.monthlyGrowth)} this month. Future returns can differ.`);
+  if (!wentWell.length) wentWell.push('Kept money accessible while exploring your options.');
+  if (!learnNext.length) learnNext.push('Match your investments to your goals and keep emergency money separate.');
+  return <motion.section ref={ref} className="results-summary" aria-label="Investment summary" tabIndex={-1} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
+    <InvestmentGrowthChart state={state} />
+    <section className="monthly-summary" aria-labelledby="monthly-summary-title">
+      <div className="monthly-summary-heading"><h2 id="monthly-summary-title"><CalendarDays size={24} />This month’s summary</h2><button className="icon-button" aria-label="Close summary" onClick={onClose}><X size={18} /></button></div>
+      <div className="monthly-summary-content">
+        <section className="summary-section positive"><span className="summary-icon"><ThumbsUp size={19} /></span><div><h3>What went well</h3><ul>{wentWell.map(item => <li key={item}>{item}</li>)}</ul></div></section>
+        <section className="summary-section learning"><span className="summary-icon"><Lightbulb size={20} /></span><div><h3>What to learn next</h3><ul>{learnNext.map(item => <li key={item}>{item}</li>)}</ul></div></section>
+        <p className="summary-note">Your choices so far · Simulated money · Month {state.month}</p>
+      </div>
+    </section>
+  </motion.section>;
+}
 export default function App() {
   const [state, setState] = useState(initialState);
   const [latestUpdate, setLatestUpdate] = useState<{ before: GameState; after: GameState; explanation: string } | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const summaryButton = useRef<HTMLButtonElement>(null);
   const [penthouseOpen, setPenthouseOpen] = useState(false);
   const transitionLock = useRef(false);
   useEffect(() => { transitionLock.current = false; }, [state]);
@@ -150,7 +207,7 @@ export default function App() {
   const title = completed ? 'Your choices added up.' : state.phase === 'penthouse' ? (penthouseOpen ? 'Your penthouse options' : 'Not quite penthouse money…') : result ? 'Here’s what happened' : accountStep ? 'Which account would you like to open?' : state.phase === 'method' ? 'You got a raise!' : fundStep ? 'Which ETF would you like to invest in?' : state.phase === 'assistance' ? 'Your emergency fund is empty!' : state.month === 6 && state.monthlyGrowth > 0 ? 'Omg congrats! Your investments grew.' : state.month === 6 && state.monthlyGrowth < 0 ? 'Markets had a rough month.' : event.title;
   const description = state.phase === 'penthouse' ? state.explanation : accountStep ? 'Pick a simulated account. Learn More explains each one.' : state.phase === 'method' ? (state.path === 'work' ? event.body : 'Your part-time role brings an extra $250/month in this demo. How would you like to invest?') : fundStep ? `${state.explanation} You have ${money(Math.min(state.cash, state.reservedGift + RULES.raise))} ready to invest.` : state.phase === 'assistance' ? 'You don’t have $200 in your emergency fund. You have to call Mom to ask for money :(' : state.month === 5 && state.path === 'university' ? 'Your part-time role brings an extra $250/month in this demo. Where should it go?' : state.month === 6 ? `${state.monthlyGrowth > 0 ? `You made ${exactMoney(state.monthlyGrowth)} this month!` : state.monthlyGrowth < 0 ? `Your investments fell ${exactMoney(-state.monthlyGrowth)} this month.` : 'Your cash and savings stayed out of the market.'} What would you like to do with this money?` : event.body;
   function play(cue = 'click_001') { if (sound) { const audio = new Audio(`/audio/${cue}.ogg`); audio.volume = 0.3; void audio.play().catch(() => {}); } }
-  function replay() { setLatestUpdate(null); setSummaryOpen(true); setPenthouseOpen(false); if (completed) setPrevious(state); setState(initialState(state.market)); play('back_001'); }
+  function replay() { setResultsOpen(false); setLatestUpdate(null); setSummaryOpen(true); setPenthouseOpen(false); if (completed) setPrevious(state); setState(initialState(state.market)); play('back_001'); }
   function makeChoice(id: string) {
     if (loadingMarket || transitionLock.current || disabledReason(state, id)) return;
     transitionLock.current = true;
@@ -160,6 +217,8 @@ export default function App() {
     if (hasFinancialUpdate(state, nextState)) setLatestUpdate({ before: state, after: nextState, explanation: decision.explanation });
     setState(nextState); play('confirmation_001');
   }
+  function openResults() { setSummaryOpen(false); setResultsOpen(true); }
+  function closeResults() { setResultsOpen(false); summaryButton.current?.focus({ preventScroll: true }); }
   function accountChanged(label: string) {
     const get = financialRows.find(([name]) => name === label)?.[1];
     return !!latestUpdate && !!get && get(latestUpdate.before) !== get(latestUpdate.after);
@@ -212,7 +271,7 @@ export default function App() {
           <div className="story-heading">{result ? <Check /> : state.month === 3 ? <Wrench /> : <CalendarDays />}<h1 id="story-title" ref={heading} tabIndex={-1}>{title}</h1></div>
           {completed ? <><p className="story-description">{state.explanation}</p><div className="year-result"><span>Your portfolio after the pitch</span><strong>{exactMoney(portfolio(state))}</strong><p>{money(state.totalContributed)} contributed · {exactMoney(state.totalMarketChange)} growth · {money(state.totalWithdrawn)} withdrawn</p></div><dl className="ending-summary" aria-label="Final financial summary">{([
             ['Cash', state.cash], ['General savings', state.savings], ['Emergency fund', state.emergencySavings], ['Investments', portfolio(state)], ['Debt', totalDebt(state)], ['Net worth', netWorth(state)]
-          ] as [string, number][]).map(([label, amount]) => <div key={label} className={amount !== (label === 'Cash' || label === 'Net worth' ? RULES.startingCash : 0) ? 'summary-changed' : undefined}><dt>{label}</dt><dd>{exactMoney(amount)}</dd></div>)}</dl><button className="primary-button" onClick={() => setModal('compare')}>Compare your paths<GitCompareArrows size={18} /></button><button className="secondary-button" onClick={replay}><RotateCcw size={17} />Try a different story</button><button className="secondary-button" onClick={() => setSummaryOpen(false)}>Back to dashboard</button>{storageUnavailable && <p className="fine-print">Browser storage is unavailable. Your result is kept for replay while this tab stays open.</p>}</> : <><p className="story-description">{description}</p>
+          ] as [string, number][]).map(([label, amount]) => <div key={label} className={amount !== (label === 'Cash' || label === 'Net worth' ? RULES.startingCash : 0) ? 'summary-changed' : undefined}><dt>{label}</dt><dd>{exactMoney(amount)}</dd></div>)}</dl><button className="primary-button" onClick={() => setModal('compare')}>Compare your paths<GitCompareArrows size={18} /></button><button className="secondary-button" onClick={replay}><RotateCcw size={17} />Try a different story</button><button className="primary-button" onClick={openResults}>See my results<ArrowRight size={18} /></button><button className="secondary-button" onClick={() => setSummaryOpen(false)}>Back to dashboard</button>{storageUnavailable && <p className="fine-print">Browser storage is unavailable. Your result is kept for replay while this tab stays open.</p>}</> : <><p className="story-description">{description}</p>
           {state.phase === 'penthouse' && !penthouseOpen ? <button className="primary-button" onClick={() => setPenthouseOpen(true)}>See my options<ArrowRight size={18} /></button> : <div className="choices three-choices" role="group" aria-label="Choose your next step">{choices.map((choice, i) => { const reason = disabledReason(state, choice.id); return <div className={accountStep || fundStep ? 'account-choice' : 'choice-wrap'} key={choice.id}><motion.button whileTap={{ scale: 0.98 }} className={`choice choice-${i % 3}`} aria-label={choice.title} disabled={!!reason || loadingMarket} title={reason || choice.description} onClick={() => makeChoice(choice.id)}><span><b>{choice.title}</b><small>{reason || choice.description}</small></span><ChevronRight size={18} /></motion.button>{(accountStep || fundStep) && <button className="learn-more" aria-label={`Learn more about ${choice.id}`} onClick={() => setModal(choice.id as Account | Fund)}>Learn More<Info size={14} /></button>}</div>; })}</div>}
           {loadingMarket && <p role="status">Loading market data…</p>}</>}
         </motion.div><div className="lesson" aria-live="polite"><Lightbulb size={23} /><p>{lesson}</p></div>
@@ -230,16 +289,17 @@ export default function App() {
           <div className="profile-context"><small>{playerAvatar.name}</small><small className={`literacy-badge level-${profile.literacyLevel}`}>Level {profile.literacyLevel} · {literacyLevels[profile.literacyLevel - 1].name}</small></div>
         </div>
       </div>
-      {completed ? <section className="story-card panel-card"><h2>Your story is complete</h2><button className="primary-button" onClick={() => setSummaryOpen(true)}>View final summary</button></section> : storyInPopup ? <section className="story-card panel-card alert-placeholder"><Info /><h2>{state.month === 3 ? "An unexpected expense" : "Your penthouse options"}</h2><p>Choose an option in the popup to continue.</p></section> : storyContent}
+      {completed ? <section className="story-card panel-card"><h2>Your story is complete</h2><button className="primary-button" onClick={() => setSummaryOpen(true)}>View final summary</button><button ref={summaryButton} className="secondary-button" aria-expanded={resultsOpen} onClick={openResults}>View monthly summary<CalendarDays size={16} /></button></section> : storyInPopup ? <section className="story-card panel-card alert-placeholder"><Info /><h2>{state.month === 3 ? "An unexpected expense" : "Your penthouse options"}</h2><p>Choose an option in the popup to continue.</p></section> : storyContent}
       {!completed && latestUpdate && <FinancialUpdate {...latestUpdate} />}
       <section className="finances panel-card"><h2><Wallet size={28} />Your Finances</h2><div className="stat-grid"><Stat icon={Coins} label="Cash" changed={accountChanged('Cash')} amount={state.cash} tone="cash" /><Stat icon={ChartNoAxesCombined} label="Investments" changed={accountChanged('Investments')} amount={portfolio(state)} tone="investment" /><Stat icon={CreditCard} label="Debt" changed={accountChanged('Debt')} amount={totalDebt(state)} tone="debt" /><Stat icon={Wallet} label="Savings" changed={accountChanged('General savings')} amount={state.savings} tone="cash" /><Stat icon={ShieldCheck} label="Emergency Fund" changed={accountChanged('Emergency fund')} amount={state.emergencySavings} tone="savings" /></div><div className="account-status"><Landmark size={15} />{state.account ? `${state.account} · Open` : portfolio(state) ? 'Unregistered demo portfolio' : 'Investment account · Not opened'}</div>{state.recurring && <p className="recurring-status">Raise plan: $250/month → {state.recurring === 'invest' ? state.selectedFund : state.recurring === 'savings' ? 'Savings' : 'Emergency fund'}</p>}{state.method && <p className="recurring-status">{METHODS.find(m => m.id === state.method)?.title}</p>}</section>
       {state.month >= 3 && <section className="portfolio-panel panel-card" aria-label="Portfolio performance"><div><span>Contributed</span><b>{exactMoney(state.totalContributed)}</b></div><div className={state.totalMarketChange < 0 ? 'negative' : 'positive'}><span>Investment growth</span><b>{state.totalMarketChange >= 0 ? '+' : ''}{exactMoney(state.totalMarketChange)}</b></div>{state.totalWithdrawn > 0 && <div><span>Withdrawn</span><b>{exactMoney(state.totalWithdrawn)}</b></div>}<div className={state.monthlyGrowth < 0 ? 'negative' : 'positive'}><span>This month’s market</span><b>{state.monthlyGrowth >= 0 ? '+' : ''}{exactMoney(state.monthlyGrowth)}</b></div><div className="holdings-list">{HOLDINGS.filter(symbol => state.holdings[symbol] > 0).map(symbol => <p key={symbol}>{symbol === 'BIZTECH' ? 'BizTech' : symbol} · {exactMoney(state.holdings[symbol])} · {(state.market.months[state.month - 1][symbol] * 100).toFixed(1)}% this month</p>)}</div><small>{state.market.label} · {state.market.source === 'api' ? state.market.asOf : 'SAMPLE DATA'}</small></section>}
-      <section className="savings-goal panel-card"><div className="goal-heading"><span className="goal-icon"><House size={30} /></span><div><h2>Financial Goal</h2><p>{goal ? `${goal.name} · ${money(goal.target)}` : 'Not selected'}</p></div></div>{goal ? <><div className="progress-rail" role="progressbar" aria-label={`${goal.name} goal`} aria-valuenow={Math.round(goalProgress(state) * 100)} aria-valuemin={0} aria-valuemax={100}><motion.div animate={{ width: `${goalProgress(state) * 100}%` }} /></div><p className="goal-total">{money(goalFunds(state))} / {money(goal.target)} · {Math.round(goalProgress(state) * 100)}%</p></> : <p className="goal-hint">See where your investing choices take you. A Miami goal may be ahead.</p>}</section>
+      <section className="savings-goal panel-card"><div className="goal-heading"><span className="goal-icon"><House size={30} /></span><div><h2>Financial Goal</h2><p>{goal ? `${goal.name} · ${money(goal.target)}` : 'Not selected'}</p></div></div>{goal ? <><div className="progress-rail" role="progressbar" aria-label={`${goal.name} goal`} aria-valuenow={Math.round(goalProgress(state) * 100)} aria-valuemin={0} aria-valuemax={100}><motion.div animate={{ width: `${goalProgress(state) * 100}%` }} /></div><p className="goal-total">{money(goalFunds(state))} / {money(goal.target)} · {(goalProgress(state) * 100).toFixed(1)}%</p></> : <p className="goal-hint">See where your investing choices take you. A Miami goal may be ahead.</p>}</section>
       <button className="simulation-button panel-card" onClick={() => setModal('how')}><Info size={23} />How this simulation works<ChevronRight size={19} /></button>
       <nav className="bottom-nav panel-card" aria-label="Game controls"><button aria-label="Replay" disabled={loadingMarket} onClick={replay}><RotateCcw />Replay</button><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
     </aside>
-    <section className="world-panel" aria-label="Your financial world"><div className="world-toolbar"><div className="toolbar-actions"><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
+    <section className={`world-panel ${completed && resultsOpen ? 'has-summary' : ''}`} aria-label="Your financial world"><div className="world-toolbar"><div className="toolbar-actions"><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
       <div className="world-view"><Suspense fallback={<div className="scene-loading">Setting up your campsite…</div>}><Town state={state} reduced={reduced} zoom={1} avatarId={profile.avatarId} avatarName={profile.name} /></Suspense></div>
+      {completed && resultsOpen && <InvestmentSummary state={state} onClose={closeResults} />}
       <span className="simulation-note">Simulated money · {state.market.source === 'api' ? 'Historical market returns' : 'Sample returns'}</span>
     </section>
     {storyInPopup && <FullScreenPanel key={completed ? 'final-summary' : state.month === 3 ? 'medical-alert' : 'penthouse-options'} tone={completed ? 'summary' : state.month === 3 ? 'danger' : 'default'} eyebrow={completed ? 'YOUR FINAL SUMMARY · MONTH 6' : state.month === 3 ? 'UNEXPECTED EXPENSE · MONTH 3' : 'YOUR NEXT MOVE · MONTH 6'}>{storyContent}</FullScreenPanel>}
