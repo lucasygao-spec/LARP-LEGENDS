@@ -1,12 +1,15 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
-import { motion, MotionConfig, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion, MotionConfig, useReducedMotion } from 'motion/react';
 import { ArrowRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, Info, RotateCcw, ShieldCheck, Sparkles, ThumbsUp, Volume2, VolumeX, Wallet, Wrench, X, Landmark, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import story from './data/story.json';
+import { OnboardingIntro } from './OnboardingIntro';
+import { InvestmentGrowthChart } from './InvestmentGrowthChart';
+import { AmbientBackdrop } from './AmbientBackdrop';
 import { avatars, getAvatar } from './avatarCatalog';
 import type { AvatarId } from './avatarCatalog';
-import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, initialState, money, monthName, netWorth, portfolio, totalDebt, RULES } from './engine';
+import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, initialState, money, netWorth, portfolio, totalDebt, RULES } from './engine';
 import type { Account, GameState } from './engine';
 import { FUNDS, HOLDINGS, METHODS } from './investments';
 import type { Fund } from './investments';
@@ -22,6 +25,7 @@ const literacyLevels: { level: FinancialLiteracyLevel; name: string; description
   { level: 2, name: 'Money Minded', description: "I'm starting to think ahead." },
   { level: 3, name: 'Financially Savvy', description: 'I understand the game.' },
 ];
+function focusOnboardingHeading(node: HTMLHeadingElement | null) { node?.focus({ preventScroll: true }); }
 function loadProfile(): PlayerProfile | null {
   try {
     const data = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
@@ -91,28 +95,6 @@ const activityRows: [string, (s: GameState) => number][] = [
 function hasFinancialUpdate(before: GameState, after: GameState) {
   return [...financialRows, ...activityRows].some(([, value]) => value(before) !== value(after)) || HOLDINGS.some(symbol => before.holdings[symbol] !== after.holdings[symbol]);
 }
-function InvestmentGrowthChart({ state }: { state: GameState }) {
-  const marketChange = state.stock ? state.totalMarketChange : state.monthlyGrowth;
-  const monthly = state.ledger.filter((entry, i, all) => i === all.length - 1 || entry.month !== all[i + 1].month);
-  const points = [{ month: 0, investments: state.ledger[0].investments, contributions: 0 }, ...monthly.map(entry => ({ month: entry.month, investments: entry.investments, contributions: Math.max(0, entry.contributed - entry.withdrawn) }))];
-  const maximum = Math.ceil(Math.max(100, ...points.flatMap(point => [point.investments, point.contributions])) / 100) * 100;
-  const x = (month: number) => 100 + month / story.length * 446;
-  const y = (amount: number) => 218 - amount / maximum * 182;
-  const portfolioPoints = points.map(point => `${x(point.month)},${y(point.investments)}`).join(' ');
-  const contributionPoints = points.map(point => `${x(point.month)},${y(point.contributions)}`).join(' ');
-  return <section className="investment-chart" aria-labelledby="growth-title">
-    <div className="investment-chart-heading"><h2 id="growth-title"><ChartNoAxesCombined size={27} />Portfolio Growth</h2><div className="growth-legend"><span className="portfolio-key">Portfolio value</span><span className="contribution-key">Net contributions</span></div></div>
-    <svg viewBox="0 0 570 260" role="img" aria-label={`Portfolio value ${exactMoney(portfolio(state))}; net contributions ${exactMoney(Math.max(0, state.totalContributed - state.totalWithdrawn))}`}>
-      {[0, 0.5, 1].map(ratio => { const amount = maximum * ratio; const lineY = y(amount); return <g key={ratio}><line x1="100" x2="546" y1={lineY} y2={lineY} className="growth-gridline" /><text x="90" y={lineY + 4} textAnchor="end">{money(amount)}</text></g>; })}
-      {points.map(point => <line key={point.month} x1={x(point.month)} x2={x(point.month)} y1="36" y2="218" className="growth-gridline" />)}
-      <polyline points={portfolioPoints} className="portfolio-series" /><polyline points={contributionPoints} className="contribution-series" />
-      {points.map(point => <g key={point.month}><circle cx={x(point.month)} cy={y(point.contributions)} r="3" className="contribution-point" /><circle cx={x(point.month)} cy={y(point.investments)} r="4.5" className="portfolio-point" tabIndex={0} aria-label={`${monthName(point.month)}: portfolio ${exactMoney(point.investments)}, net contributions ${exactMoney(point.contributions)}`}><title>{`${monthName(point.month)}: portfolio ${exactMoney(point.investments)} · net contributions ${exactMoney(point.contributions)}`}</title></circle><text x={x(point.month)} y="247" textAnchor="middle">{point.month === 0 ? 'Start' : `M${point.month}`}</text></g>)}
-    </svg>
-    <div className={`growth-market-change ${marketChange < 0 ? 'negative' : ''}`}><ChartNoAxesCombined size={19} /><span>{state.stock ? 'Market change across your story:' : 'Market change this month:'} <strong>{marketChange >= 0 ? '+' : ''}{exactMoney(marketChange)}</strong></span><Info size={15} aria-label="Market change excludes contributions and withdrawals." /></div>
-    {state.stock && <p className="growth-note">Monthly game snapshots. M6 includes the historical stock updates.</p>}
-    {state.totalWithdrawn > 0 && <p className="growth-note">{exactMoney(state.totalWithdrawn)} sold from investments. Proceeds are reflected in your cash and any later spending.</p>}
-  </section>;
-}
 function FinancialUpdate({ before, after, explanation }: { before: GameState; after: GameState; explanation: string }) {
   const changes = activityRows.map(([label, get]) => ({ label, amount: Math.round((get(after) - get(before)) * 100) / 100 })).filter(row => row.amount !== 0);
   return <section className="financial-update panel-card" aria-label="Latest financial update">
@@ -147,7 +129,7 @@ function Compare({ state, previous }: { state: GameState; previous: GameState | 
   const rows: [string, (s: GameState) => number][] = [['Cash', s => s.cash], ['General savings', s => s.savings], ['Emergency fund', s => s.emergencySavings], ['Investments', portfolio], ['Contributed', s => s.totalContributed], ['Withdrawn', s => s.totalWithdrawn], ['Investment growth', s => s.totalMarketChange], ['Debt', totalDebt], ['Net worth', netWorth]];
   return <><p className="modal-intro">See how your choices add up over time.</p>{!previous && <p className="notice">Finish the pitch, then replay to compare two paths.</p>}<table className="compare-table"><thead><tr><th>At a glance</th><th>This run · M{state.month}</th><th>Previous run</th></tr></thead><tbody>{rows.map(([label, get]) => <tr key={label}><th>{label}</th><td>{exactMoney(get(state))}</td><td>{previous ? exactMoney(get(previous)) : '—'}</td></tr>)}<tr><th>Account / goal</th><td>{state.account || 'None'} / {state.goal ? GOALS[state.goal].name : 'Not selected'}</td><td>{previous ? `${previous.account || 'None'} / ${previous.goal ? GOALS[previous.goal].name : 'Not selected'}` : '—'}</td></tr></tbody></table><h3 className="modal-subtitle">Your paths</h3><div className="path-list">{Array.from({length: story.length}, (_, i) => <div key={i}><span>{`M${i + 1}`}</span><p>{state.decisionHistory[i]?.title || 'Still ahead'}</p><p>{previous?.decisionHistory[i]?.title || '—'}</p></div>)}</div><p className="fine-print">This run: {state.market.label} ({state.market.asOf}). Previous: {previous ? `${previous.market.label} (${previous.market.asOf})` : 'none'}. Different data sequences can also affect results.</p></>;
 }
-function InvestmentSummary({ state, onClose }: { state: GameState; onClose: () => void }) {
+function InvestmentSummary({ state, onClose, reduced }: { state: GameState; onClose: () => void; reduced: boolean }) {
   const ref = useRef<HTMLElement>(null);
   useEffect(() => {
     ref.current?.focus({ preventScroll: true });
@@ -173,7 +155,7 @@ function InvestmentSummary({ state, onClose }: { state: GameState; onClose: () =
   if (!wentWell.length) wentWell.push('Kept money accessible while exploring your options.');
   if (!learnNext.length) learnNext.push('Match your investments to your goals and keep emergency money separate.');
   return <motion.section ref={ref} className="results-summary" aria-label="Investment summary" tabIndex={-1} initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
-    <InvestmentGrowthChart state={state} />
+    <InvestmentGrowthChart state={state} reduced={reduced} />
     <section className="monthly-summary" aria-labelledby="monthly-summary-title">
       <div className="monthly-summary-heading"><h2 id="monthly-summary-title"><CalendarDays size={24} />This month’s summary</h2><button className="icon-button" aria-label="Close summary" onClick={onClose}><X size={18} /></button></div>
       <div className="monthly-summary-content">
@@ -199,8 +181,9 @@ export default function App() {
   const [penthouseOpen, setPenthouseOpen] = useState(false);
   const transitionLock = useRef(false);
   useEffect(() => { transitionLock.current = false; }, [state]);
-  const [profile, setProfile] = useState<PlayerProfile | null>(loadProfile);
+  const [profile, setProfile] = useState<PlayerProfile | null>(() => new URLSearchParams(window.location.search).has('onboarding') ? null : loadProfile());
   const [playerName, setPlayerName] = useState('');
+  const [onboardingStep, setOnboardingStep] = useState<'intro' | 'character'>('intro');
   const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId | null>('chicken-guy');
   const [selectedLiteracyLevel, setSelectedLiteracyLevel] = useState<FinancialLiteracyLevel | null>(null);
   const [previous, setPrevious] = useState<GameState | null>(loadPrevious);
@@ -271,17 +254,20 @@ export default function App() {
     catch { setStorageUnavailable(true); }
     setProfile(nextProfile);
   }
-  if (!profile) return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="onboarding-screen"><form className="onboarding-card" onSubmit={startJourney}>
-    <h1>Set up your character</h1>
-    <label className="player-name-label" htmlFor="player-name">Your name</label>
-    <input id="player-name" className="player-name-input" autoComplete="nickname" maxLength={32} value={playerName} onChange={e => setPlayerName(e.target.value)} placeholder="Your name" required />
+  if (!profile) return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><AnimatePresence mode="wait" initial={false}>
+    <motion.main key={onboardingStep} className={onboardingStep === 'intro' ? 'intro-screen' : 'onboarding-screen'} initial={{ opacity: 0, y: reduced ? 0 : 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: reduced ? 0 : -10 }} transition={{ duration: reduced ? 0 : 0.22 }}>
+      {onboardingStep !== 'intro' && <AmbientBackdrop reduced={reduced} />}
+      {onboardingStep === 'intro' ? <OnboardingIntro name={playerName} onNameChange={setPlayerName} levels={literacyLevels} reduced={reduced} onChoose={level => { setSelectedLiteracyLevel(level); setOnboardingStep('character'); }} /> : <form className="onboarding-card" onSubmit={startJourney}>
+    <button type="button" className="onboarding-back" onClick={() => setOnboardingStep('intro')}><ArrowRight size={17} />Back</button>
+    <h1 tabIndex={-1} ref={focusOnboardingHeading}>Set up your character</h1>
+    <p className="onboarding-summary">{playerName.trim()} <span>·</span> {literacyLevels.find(level => level.level === selectedLiteracyLevel)?.name}</p>
     <div className="avatar-picker-heading"><h2>Choose your character</h2></div>
     <div className="avatar-picker" role="radiogroup" aria-label="Choose your character">{avatars.map(avatar => <button type="button" role="radio" aria-checked={selectedAvatarId === avatar.id} aria-label={avatar.name} className={`avatar-option ${selectedAvatarId === avatar.id ? 'selected' : ''}`} key={avatar.id} onClick={() => setSelectedAvatarId(avatar.id)}><img src={avatar.preview} alt="" loading="lazy" /><span><b>{avatar.name}</b></span>{selectedAvatarId === avatar.id && <Check size={18} />}</button>)}</div>
-    <div className="avatar-picker-heading literacy-heading"><h2>How familiar are you with money?</h2></div>
-    <div className="literacy-picker" role="radiogroup" aria-label="Financial literacy level">{literacyLevels.map(option => <button type="button" role="radio" aria-checked={selectedLiteracyLevel === option.level} className={`literacy-option level-${option.level} ${selectedLiteracyLevel === option.level ? 'selected' : ''}`} key={option.level} onClick={() => setSelectedLiteracyLevel(option.level)}><b>Level {option.level} — {option.name}</b><small>“{option.description}”</small></button>)}</div>
     {loadingMarket ? <p className="onboarding-status" role="status">Preparing your financial world…</p> : <button type="submit" className="primary-button onboarding-submit" disabled={!playerName.trim() || !selectedAvatarId || !selectedLiteracyLevel}>Start</button>}
     {storageUnavailable && <p className="onboarding-status">Your profile will be kept for this session, but this browser can’t save it for next time.</p>}
-  </form></main></MotionConfig>;
+  </form>}
+    </motion.main>
+  </AnimatePresence></MotionConfig>;
   const playerAvatar = getAvatar(profile.avatarId);
   const storyInPopup = state.month === 3 || (state.phase === 'penthouse' && penthouseOpen) || (completed && summaryOpen);
   const storyContent = <section className="story-card panel-card">
@@ -290,11 +276,11 @@ export default function App() {
           {completed ? <><StockSummary state={state} />{!state.stock && <p className="story-description">{state.explanation}</p>}{!state.stock && <><div className="year-result"><span>Your portfolio after the pitch</span><strong>{exactMoney(portfolio(state))}</strong><p>{money(state.totalContributed)} contributed · {exactMoney(state.totalMarketChange)} growth · {money(state.totalWithdrawn)} withdrawn</p></div><dl className="ending-summary" aria-label="Final financial summary">{([
             ['Cash', state.cash], ['General savings', state.savings], ['Emergency fund', state.emergencySavings], ['Investments', portfolio(state)], ['Debt', totalDebt(state)], ['Net worth', netWorth(state)]
           ] as [string, number][]).map(([label, amount]) => <div key={label} className={amount !== (label === 'Cash' || label === 'Net worth' ? RULES.startingCash : 0) ? 'summary-changed' : undefined}><dt>{label}</dt><dd>{exactMoney(amount)}</dd></div>)}</dl></>}<button className="primary-button" onClick={() => setModal('compare')}>Compare your paths<GitCompareArrows size={18} /></button><button className="secondary-button" onClick={replay}><RotateCcw size={17} />Try a different story</button><button className="primary-button" onClick={openResults}>See my results<ArrowRight size={18} /></button><button className="secondary-button" onClick={() => setSummaryOpen(false)}>Back to dashboard</button>{storageUnavailable && <p className="fine-print">Browser storage is unavailable. Your result is kept for replay while this tab stays open.</p>}</> : <>{stockStep ? <StockPanel key={state.phase} state={state} onChange={updateStock} /> : <p className="story-description">{description}</p>}
-          {state.phase === 'penthouse' && !penthouseOpen ? <button className="primary-button" onClick={() => setPenthouseOpen(true)}>See my options<ArrowRight size={18} /></button> : <div className="choices three-choices" role="group" aria-label="Choose your next step">{choices.map((choice, i) => { const reason = disabledReason(state, choice.id); return <div className={accountStep || fundStep ? 'account-choice' : 'choice-wrap'} key={choice.id}><motion.button whileTap={{ scale: 0.98 }} className={`choice choice-${i % 3}`} aria-label={choice.title} disabled={!!reason || loadingMarket} title={reason || choice.description} onClick={() => makeChoice(choice.id)}><span><b>{choice.title}</b><small>{reason || choice.description}</small></span><ChevronRight size={18} /></motion.button>{(accountStep || fundStep) && <button className="learn-more" aria-label={`Learn more about ${choice.id}`} onClick={() => setModal(choice.id as Account | Fund)}>Learn More<Info size={14} /></button>}</div>; })}</div>}
+          {state.phase === 'penthouse' && !penthouseOpen ? <button className="primary-button" onClick={() => setPenthouseOpen(true)}>See my options<ArrowRight size={18} /></button> : <div className="choices three-choices" role="group" aria-label="Choose your next step">{choices.map((choice, i) => { const reason = disabledReason(state, choice.id); return <div className={accountStep || fundStep ? 'account-choice' : 'choice-wrap'} key={choice.id}><motion.button initial={{ opacity: reduced ? 1 : 0, y: reduced ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: reduced ? 0 : 0.24, delay: reduced ? 0 : i * 0.045 }} whileTap={{ scale: 0.98 }} className={`choice choice-${i % 3}`} aria-label={choice.title} disabled={!!reason || loadingMarket} title={reason || choice.description} onClick={() => makeChoice(choice.id)}><span><b>{choice.title}</b><small>{reason || choice.description}</small></span><ChevronRight size={18} /></motion.button>{(accountStep || fundStep) && <button className="learn-more" aria-label={`Learn more about ${choice.id}`} onClick={() => setModal(choice.id as Account | Fund)}>Learn More<Info size={14} /></button>}</div>; })}</div>}
           {loadingMarket && <p role="status">Loading market data…</p>}</>}
         </motion.div><div className="lesson" aria-live="polite"><Lightbulb size={23} /><p>{lesson}</p></div>
       </section>;
-  return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="game-layout">
+  return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="game-layout" data-reduced-motion={reduced}>
     <aside className="decision-panel" aria-label="Your decisions">
       <div className="profile panel-card">
         <button type="button" className="avatar" aria-label={`Edit player, currently ${profile.name}, ${playerAvatar.name}`} title="Change name or avatar" onClick={() => setModal('profile')}><img src={playerAvatar.preview} alt="" /></button>
@@ -315,8 +301,9 @@ export default function App() {
       <nav className="bottom-nav panel-card" aria-label="Game controls"><button aria-label="Replay" disabled={loadingMarket} onClick={replay}><RotateCcw />Replay</button><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
     </aside>
     <section ref={worldPanel} className={`world-panel ${completed && resultsOpen ? 'has-summary' : ''}`} aria-label="Your financial world"><div className="world-toolbar"><div className="toolbar-actions"><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
+      <AmbientBackdrop reduced={reduced} sky />
       <div className="world-view"><Suspense fallback={<div className="scene-loading">Setting up your campsite…</div>}><Town state={state} reduced={reduced} zoom={1} avatarId={profile.avatarId} avatarName={profile.name} /></Suspense></div>
-      {completed && resultsOpen && <InvestmentSummary state={state} onClose={closeResults} />}
+      {completed && resultsOpen && <InvestmentSummary state={state} onClose={closeResults} reduced={reduced} />}
       <span className="simulation-note">Simulated money · {state.stock ? 'Historical stock prices' : state.market.source === 'api' ? 'Historical market returns' : 'Sample returns'}</span>
     </section>
     {storyInPopup && <FullScreenPanel key={completed ? 'final-summary' : state.month === 3 ? 'medical-alert' : 'penthouse-options'} tone={completed ? 'summary' : state.month === 3 ? 'danger' : 'default'} eyebrow={completed ? 'YOUR FINAL SUMMARY · MONTH 6' : state.month === 3 ? 'UNEXPECTED EXPENSE · MONTH 3' : 'YOUR NEXT MOVE · MONTH 6'}>{storyContent}</FullScreenPanel>}

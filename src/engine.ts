@@ -154,7 +154,7 @@ export function choose(state: GameState, id: string): GameState {
   }
   if (s.month === 2) {
     if (id === 'save-emergency') save(s,RULES.emergencyDeposit,true);
-    return finishChoice(s,id,id === 'save-emergency' ? 'CA$200.00 moved into your emergency fund. Your home’s shield is ready for life’s surprises.' : 'You kept the CA$200.00 in cash. Your emergency fund is still empty.');
+    return finishChoice(s,id,id === 'save-emergency' ? 'CA$200.00 moved into your emergency fund. You have a cushion for life’s surprises.' : 'You kept the CA$200.00 in cash. Your emergency fund is still empty.');
   }
   if (s.month === 3) {
     if (id === 'use-emergency' && s.emergencySavings < RULES.medicalBill) { s.phase = 'assistance'; s.explanation = 'You don’t have enough in your emergency fund! Time to call Mom.'; return s; }

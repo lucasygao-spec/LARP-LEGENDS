@@ -10,8 +10,9 @@ const context = await browser.newContext({ viewport: { width: 1440, height: 1160
 const page = await context.newPage();
 await page.goto('http://127.0.0.1:5173');
 await page.getByLabel('Your name', { exact: true }).fill('Maya');
+await page.getByLabel('Your name', { exact: true }).press('Enter');
+await page.getByRole('button', { name: 'Money Rookie', exact: true }).click();
 await page.getByRole('radio', { name: 'Generic Female', exact: true }).click();
-await page.getByRole('radio', { name: /Level 1/ }).click();
 await page.getByRole('button', { name: 'Start', exact: true }).click();
 await page.locator('[data-city-ready="true"]').waitFor();
 await page.evaluate(() => {
