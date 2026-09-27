@@ -36,6 +36,7 @@ export const netWorth = (s: GameState) => round(s.cash + s.savings + s.emergency
 export const penthouseRentalCost = (s: GameState) => s.cash;
 export const goalFunds = (s: GameState) => round(s.cash + s.savings + portfolio(s));
 export const penthouseShortfall = (s: GameState) => round(Math.max(0, GOALS.miami.target - goalFunds(s)));
+export const homeUpgradeUnlocked = (s: GameState) => s.decisionHistory.some(decision => decision.choice === 'raise-invest');
 export const goalProgress = (s: GameState) => s.goal ? Math.min(1, goalFunds(s) / GOALS[s.goal].target) : 0;
 // Three districts visualize fund exposure; they are not extra holdings.
 export const townSectors = (s: GameState): Record<Sector, number> => ({ technology: round(s.holdings.QQQ + s.holdings.BIZTECH), energy: s.holdings.VAB, retail: s.holdings.XUS });
@@ -108,7 +109,7 @@ export function choose(state: GameState, id: string): GameState {
   if (s.phase === 'fund') {
     s.selectedFund = id as Fund; s.recurring = 'invest';
     const amount = Math.min(s.cash, s.reservedGift + RULES.raise); s.reservedGift = 0; invest(s, amount, s.selectedFund);
-    return finishChoice(s,'raise-invest',`${money(amount)} invested in ${id}${amount > RULES.raise ? ' using your birthday gift and raise' : ' from your raise'}. Your recurring plan adds $250/month. Your next market update can be positive or negative.`, `Invest via ${METHODS.find(m=>m.id===s.method)?.title || 'ETF'} → ${id}`);
+    return finishChoice(s,'raise-invest',`${money(amount)} invested in ${id}${amount > RULES.raise ? ' using your birthday gift and raise' : ' from your raise'}. Your recurring plan adds $250/month. Your next market update can be positive or negative. Home upgraded! Investing your raise unlocked a house for your character.`, `Invest via ${METHODS.find(m=>m.id===s.method)?.title || 'ETF'} → ${id}`);
   }
   if (s.month === 1) {
     s.path = id as 'university' | 'work';
