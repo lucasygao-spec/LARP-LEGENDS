@@ -12,7 +12,7 @@ import { CampIsland, CityStreets, isOnCampGround, isOnCityWalkway } from './Town
 type Point = [number, number, number];
 const campGround = 1.53;
 const tentSize = 11;
-const spots: Record<string, Point> = { home: [0, campGround, -1], bank: [-3, campGround, 3.8], technology: [-5.3, campGround, -2.8], energy: [5.3, campGround, -2.8], retail: [7, campGround, 2.5], goal: [-0.8, campGround, 5], player: [-3.2, campGround, 3.6], debt: [-7, campGround, 0] };
+const spots: Record<string, Point> = { home: [0, campGround, 0.4], bank: [-3, campGround, 3.8], technology: [-5.3, campGround, -2.8], energy: [5.3, campGround, -2.8], retail: [7, campGround, 2.5], goal: [-0.8, campGround, 5], player: [-3.2, campGround, 3.6], debt: [-7, campGround, 0] };
 const pathStep = 0.35;
 const pathMinX = -8;
 const pathMinZ = -6.5;
@@ -57,7 +57,7 @@ function gridIndex(point: Point): number {
 function cellIsBlocked(x: number, z: number): boolean {
   const px = pathMinX + x * pathStep;
   const pz = pathMinZ + z * pathStep;
-  return (Math.abs(px - spots.home[0]) < 4.8 && Math.abs(pz - spots.home[2]) < 3.9) || walkObstacles.some(([ox, oz, radius]) => (px - ox) ** 2 + (pz - oz) ** 2 < radius ** 2);
+  return (Math.abs(px - spots.home[0]) < 4.8 && Math.abs(pz - spots.home[2]) < 2.5) || walkObstacles.some(([ox, oz, radius]) => (px - ox) ** 2 + (pz - oz) ** 2 < radius ** 2);
 }
 function cellIsWalkable(x: number, z: number, city = false): boolean {
   const px = pathMinX + x * pathStep;
@@ -150,7 +150,6 @@ function findWalkPath(start: Point, target: Point, city = false): Point[] {
   return smoothWalkPath(route, city);
 }
 
-const islandTints = { Grass: '#48a84a', Dirt: '#704b37' };
 function normalizedClone(scene: Group, size: number, tints?: Record<string, string>) {
   const copy = clone(scene);
   copy.updateMatrixWorld(true);
@@ -398,8 +397,8 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
         <div style={{ padding: '4px 8px', borderRadius: 6, background: '#ffffffed', border: '1px solid #4a8171', color: '#174d3d', boxShadow: '0 2px 6px #173b3440', fontSize: 12, fontWeight: 700, lineHeight: 1.2, whiteSpace: 'nowrap' }}>Home</div>
       </Html>
     </> : <>
-      <CampIsland><Model name="camp/island" size={18} tints={islandTints} /></CampIsland>
-      <group position={spots.home} scale={[1, 0.8, 1]}><Model name="camp/tent" size={tentSize} /></group>
+      <CampIsland height={campGround} />
+      <group position={spots.home} scale={[1, 0.9, 0.7]}><Model name="camp/tent" size={tentSize} /></group>
       <CampGrass />
       <Shield amount={state.emergencySavings} reduced={reduced} />
       <Campfire progress={goalProgress(state)} reduced={reduced} />

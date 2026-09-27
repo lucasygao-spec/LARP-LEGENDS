@@ -1,15 +1,45 @@
 import { RoundedBox } from '@react-three/drei';
-import type { ReactNode } from 'react';
+import { useMemo } from 'react';
+import { BufferGeometry, Float32BufferAttribute, Color } from 'three';
 
 type Walkway = { from: [number, number]; to: [number, number]; width: number };
 
 // The reference campsite is an open clearing; movement stays on the island.
 export function isOnCampGround(x: number, z: number): boolean {
-  return (x / 8.1) ** 2 + (z / 7.4) ** 2 <= 1;
+  return (x / 8.1) ** 2 + (z / 6.6) ** 2 <= 1;
 }
 
-export function CampIsland({ children }: { children?: ReactNode }) {
-  return <group position={[0, -5.5, 0]} scale={[1, 0.4, 1]}>{children}</group>;
+export function CampIsland({ height }: { height: number }) {
+  const geometry = useMemo(() => {
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const sides = 14;
+    const triangle = (a: number[], b: number[], c: number[], tint: string) => {
+      positions.push(...a, ...b, ...c);
+      const color = new Color(tint);
+      for (let i = 0; i < 3; i++) colors.push(color.r, color.g, color.b);
+    };
+    const rim = (i: number, bottom = false) => {
+      const angle = Math.PI / 2 + i * Math.PI * 2 / sides;
+      const radius = bottom ? 0.83 : 1;
+      return [Math.cos(angle) * 9 * radius, bottom ? height - 3.4 - (i % 3) * 0.2 : height, Math.sin(angle) * 7.3 * radius];
+    };
+    const dirt = ['#72503a', '#60412e', '#805b40', '#68472f'];
+    for (let i = 0; i < sides; i++) {
+      const a = rim(i), b = rim((i + 1) % sides);
+      const c = rim(i, true), d = rim((i + 1) % sides, true);
+      triangle([0, height, 0], b, a, '#65b84c');
+      triangle(a, b, c, dirt[i % dirt.length]);
+      triangle(b, d, c, dirt[(i + 1) % dirt.length]);
+      triangle([0, height - 3.7, 0], c, d, '#60412e');
+    }
+    const result = new BufferGeometry();
+    result.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    result.setAttribute('color', new Float32BufferAttribute(colors, 3));
+    result.computeVertexNormals();
+    return result;
+  }, [height]);
+  return <mesh geometry={geometry} receiveShadow castShadow><meshStandardMaterial vertexColors flatShading roughness={1} /></mesh>;
 }
 
 const cityRoads: Walkway[] = [
