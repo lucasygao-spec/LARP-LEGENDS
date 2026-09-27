@@ -40,6 +40,9 @@ function Modal({ title, children, onClose, wide = false }: { title: string; chil
   useEffect(() => { ref.current?.showModal(); const bodyOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = bodyOverflow; }; }, []);
   return <dialog ref={ref} className={wide ? 'modal wide' : 'modal'} onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) onClose(); }} aria-labelledby="modal-title"><div className="modal-top"><h2 id="modal-title">{title}</h2><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={20} /></button></div>{children}</dialog>;
 }
+function AvatarPicker({ selectedAvatarId, onSelect }: { selectedAvatarId: AvatarId | null; onSelect: (id: AvatarId) => void }) {
+  return <div className="avatar-picker" role="radiogroup" aria-label="Choose your character">{avatars.map(avatar => <button type="button" role="radio" aria-checked={selectedAvatarId === avatar.id} aria-label={avatar.name} className={`avatar-option ${selectedAvatarId === avatar.id ? 'selected' : ''}`} key={avatar.id} onClick={() => onSelect(avatar.id)}><img src={avatar.preview} alt="" loading="lazy" /><span><b>{avatar.name}</b></span>{selectedAvatarId === avatar.id && <Check size={18} />}</button>)}</div>;
+}
 function NetWorthChart({ state }: { state: GameState }) {
   const [hovered, setHovered] = useState<number | null>(null);
   const points = [{ ...state.ledger[0], month: 0 }, ...state.ledger.filter((entry, i, all) => i === all.length - 1 || entry.month !== all[i + 1].month)];
@@ -79,7 +82,7 @@ export default function App() {
   const [selectedLiteracyLevel, setSelectedLiteracyLevel] = useState<FinancialLiteracyLevel | null>(null);
   const [previous, setPrevious] = useState<GameState | null>(loadPrevious);
   const [selected, setSelected] = useState<string | null>(null);
-  const [modal, setModal] = useState<'how' | 'compare' | 'settings' | Account | null>(null);
+  const [modal, setModal] = useState<'how' | 'compare' | 'settings' | 'avatar' | Account | null>(null);
   const [quietMotion, setQuietMotion] = useState(false);
   const [tab, setTab] = useState<'town' | 'ledger'>('town');
   const [sound, setSound] = useState(false);
@@ -121,12 +124,21 @@ export default function App() {
     catch { setStorageUnavailable(true); }
     setProfile(nextProfile);
   }
+  function changeAvatar(avatarId: AvatarId) {
+    if (!profile) return;
+    const nextProfile = { ...profile, avatarId };
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile)); }
+    catch { setStorageUnavailable(true); }
+    setProfile(nextProfile);
+    setModal(null);
+    play();
+  }
   if (!profile) return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="onboarding-screen"><form className="onboarding-card" onSubmit={startJourney}>
     <h1>Set up your character</h1>
     <label className="player-name-label" htmlFor="player-name">Your name</label>
     <input id="player-name" className="player-name-input" autoComplete="nickname" maxLength={32} value={playerName} onChange={e => setPlayerName(e.target.value)} placeholder="Your name" required />
     <div className="avatar-picker-heading"><h2>Choose your character</h2></div>
-    <div className="avatar-picker" role="radiogroup" aria-label="Choose your character">{avatars.map(avatar => <button type="button" role="radio" aria-checked={selectedAvatarId === avatar.id} aria-label={avatar.name} className={`avatar-option ${selectedAvatarId === avatar.id ? 'selected' : ''}`} key={avatar.id} onClick={() => setSelectedAvatarId(avatar.id)}><img src={avatar.preview} alt="" loading="lazy" /><span><b>{avatar.name}</b></span>{selectedAvatarId === avatar.id && <Check size={18} />}</button>)}</div>
+    <AvatarPicker selectedAvatarId={selectedAvatarId} onSelect={setSelectedAvatarId} />
     <div className="avatar-picker-heading literacy-heading"><h2>How familiar are you with money?</h2></div>
     <div className="literacy-picker" role="radiogroup" aria-label="Financial literacy level">{literacyLevels.map(option => <button type="button" role="radio" aria-checked={selectedLiteracyLevel === option.level} className={`literacy-option level-${option.level} ${selectedLiteracyLevel === option.level ? 'selected' : ''}`} key={option.level} onClick={() => setSelectedLiteracyLevel(option.level)}><b>Level {option.level} — {option.name}</b><small>“{option.description}”</small></button>)}</div>
     {loadingMarket ? <p className="onboarding-status" role="status">Preparing your financial world…</p> : <button type="submit" className="primary-button onboarding-submit" disabled={!playerName.trim() || !selectedAvatarId || !selectedLiteracyLevel}>Start</button>}
@@ -135,7 +147,7 @@ export default function App() {
   const playerAvatar = getAvatar(profile.avatarId);
   return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="game-layout">
     <aside className="decision-panel" aria-label="Your decisions">
-      <div className="profile panel-card"><div className="avatar"><img src={playerAvatar.preview} alt={`${playerAvatar.name} avatar`} /></div><div><h2>{profile.name}</h2><p>{playerAvatar.name} <span>•</span> Age {state.age} · Month {state.month} / 12</p><small className={`literacy-badge level-${profile.literacyLevel}`}>Level {profile.literacyLevel} · {literacyLevels[profile.literacyLevel - 1].name}</small></div></div>
+      <div className="profile panel-card"><button type="button" className="avatar" aria-label={`Change avatar, currently ${playerAvatar.name}`} title="Change avatar" onClick={() => setModal('avatar')}><img src={playerAvatar.preview} alt="" /></button><div className="profile-details"><div className="profile-heading"><h2>{profile.name}</h2><span className="profile-age">Age {state.age}</span></div><div className="profile-meter profile-level"><span className="profile-meter-label">{literacyLevels[profile.literacyLevel - 1].name}</span><div className="profile-level-bar" role="img" aria-label={`Financial literacy level ${profile.literacyLevel}`}>{Array.from({ length: 4 }, (_, i) => <span key={i} className={i < profile.literacyLevel ? 'complete' : ''} />)}</div></div><div className="profile-meter profile-month"><span className="profile-meter-label">Month <b>{state.month}/12</b></span><div className="profile-month-bar" role="progressbar" aria-label={`Month ${state.month} of 12`} aria-valuenow={state.month} aria-valuemin={1} aria-valuemax={12}>{Array.from({ length: 12 }, (_, i) => <span key={i} className={i < state.month ? 'complete' : ''} />)}</div></div></div></div>
       <section className="story-card panel-card">
         <div className="step-track" aria-label={`Month ${state.month} of 12`}>{Array.from({length: 12}, (_, i) => <span key={i} className={i + 1 < state.month || completed ? 'done' : i + 1 === state.month ? 'current' : ''} />)}</div>
         <AnimatePresence mode="wait"><motion.div key={`${state.month}-${state.phase}`} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16 }}>
@@ -156,6 +168,6 @@ export default function App() {
       <div className="world-caption" aria-live="polite"><Info size={16} /><p>{state.explanation}</p></div><span className="fictional-note">Simulated money · {state.market.source === 'api' ? 'Historical market returns' : 'Fictional sample returns'}</span>
     </section>
     {repairNotice && <Modal title="An unexpected expense" onClose={() => setRepairNotice(false)}><div className="repair-popup"><Wrench size={40} /><p>Your car needs a $700 repair.</p><p>Your emergency fund has {money(state.emergencySavings)}. Let’s see how it can help.</p><button className="primary-button" onClick={() => setRepairNotice(false)}>See my options<ArrowRight size={18} /></button></div></Modal>}
-    {modal && <Modal title={accountInfo ? `${modal} · Learn More` : modal === 'how' ? 'How Investly works' : modal === 'settings' ? 'Make yourself at home' : 'Two paths. A clearer picture.'} onClose={() => setModal(null)} wide={modal === 'compare'}>{accountInfo ? <><p className="modal-intro">{accountInfo.description}</p><p>This is a simulated account. Real eligibility, contribution limits, and withdrawal rules apply.</p><a href={accountInfo.url} target="_blank" rel="noreferrer">Read the CRA account guide ↗</a></> : modal === 'how' ? <HowItWorks state={state} /> : modal === 'compare' ? <Compare state={state} previous={previous} /> : <div className="settings-list"><button aria-pressed={sound} onClick={() => setSound(!sound)}><Volume2 /><span><b>Game sounds</b><small>Feedback with every choice</small></span><span className={`toggle ${sound ? 'on' : ''}`} /></button><button aria-pressed={quietMotion} onClick={() => setQuietMotion(!quietMotion)}><Sparkles /><span><b>Reduce motion</b><small>Pause idle motion and coin animations</small></span><span className={`toggle ${quietMotion ? 'on' : ''}`} /></button><p className="fine-print">Your system’s reduced-motion preference is always respected.</p></div>}</Modal>}
+    {modal && <Modal title={accountInfo ? `${modal} · Learn More` : modal === 'avatar' ? 'Change your avatar' : modal === 'how' ? 'How Investly works' : modal === 'settings' ? 'Make yourself at home' : 'Two paths. A clearer picture.'} onClose={() => setModal(null)} wide={modal === 'compare' || modal === 'avatar'}>{accountInfo ? <><p className="modal-intro">{accountInfo.description}</p><p>This is a simulated account. Real eligibility, contribution limits, and withdrawal rules apply.</p><a href={accountInfo.url} target="_blank" rel="noreferrer">Read the CRA account guide ↗</a></> : modal === 'avatar' ? <><p className="modal-intro">Pick a character to update your profile and town.</p><AvatarPicker selectedAvatarId={profile.avatarId} onSelect={changeAvatar} /></> : modal === 'how' ? <HowItWorks state={state} /> : modal === 'compare' ? <Compare state={state} previous={previous} /> : <div className="settings-list"><button aria-pressed={sound} onClick={() => setSound(!sound)}><Volume2 /><span><b>Game sounds</b><small>Feedback with every choice</small></span><span className={`toggle ${sound ? 'on' : ''}`} /></button><button aria-pressed={quietMotion} onClick={() => setQuietMotion(!quietMotion)}><Sparkles /><span><b>Reduce motion</b><small>Pause idle motion and coin animations</small></span><span className={`toggle ${quietMotion ? 'on' : ''}`} /></button><p className="fine-print">Your system’s reduced-motion preference is always respected.</p></div>}</Modal>}
   </main></MotionConfig>;
 }
