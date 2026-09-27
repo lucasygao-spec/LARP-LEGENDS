@@ -4,10 +4,10 @@
     "command": "npm run build:site"
   },
   "worker": {
-    "entrypoint": "dist/worker.js",
-    "assets": {
-      "directory": "dist",
-      "binding": "ASSETS"
-    }
+    "entrypoint": "dist/worker.js"
+  },
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS"
   }
 }
