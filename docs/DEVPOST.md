@@ -16,7 +16,7 @@ The left-side dashboard shows cash, general savings, emergency savings, investme
 
 ## How we built it
 
-React and TypeScript handle story state and the dashboard. A pure engine calculates every transfer, return, expense, and student-loan interest charge. Three.js / React Three Fiber render the city and selected avatar. Motion animates financial values and a ledger chart. Browser storage retains the previous completed pitch.
+React and TypeScript handle story state and the dashboard. A pure engine calculates every transfer, return, expense, and student-loan interest charge. Three.js / React Three Fiber render the city and selected avatar. Motion animates financial values. Players can change their name and avatar from Settings while keeping their game progress. Browser storage retains the previous completed pitch.
 
 The engine tests reconcile all substantive story paths to the cent. Browser checks exercise onboarding, the actual city, empty-fund assistance, ETF learning, full-screen alerts, replay, mobile, and unavailable WebGL/storage.
 

@@ -7,11 +7,12 @@ import { Box3, Group, MathUtils, Mesh, MeshStandardMaterial, Plane, PointLight, 
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Effect, GameState, Sector } from './engine';
 import { goalProgress, money, portfolio, townSectors, totalDebt } from './engine';
-import { CampIsland, CampWalkways, CityStreets, isOnCampWalkway, isOnCityWalkway } from './TownScenery';
+import { CampIsland, CityStreets, isOnCampGround, isOnCityWalkway } from './TownScenery';
 
 type Point = [number, number, number];
 const campGround = 1.53;
-const spots: Record<string, Point> = { home: [-3.1, campGround, 0.7], bank: [0.1, campGround, -4.15], technology: [-4.8, campGround, -2.5], energy: [4.2, campGround, -2.4], retail: [4.5, campGround, 2.1], goal: [2.55, campGround, 0], player: [0.1, campGround, 4.15], debt: [-6.25, campGround, 0.7] };
+const tentSize = 11;
+const spots: Record<string, Point> = { home: [0, campGround, -1], bank: [-3, campGround, 3.8], technology: [-5.3, campGround, -2.8], energy: [5.3, campGround, -2.8], retail: [7, campGround, 2.5], goal: [-0.8, campGround, 5], player: [-3.2, campGround, 3.6], debt: [-7, campGround, 0] };
 const pathStep = 0.35;
 const pathMinX = -8;
 const pathMinZ = -6.5;
@@ -20,15 +21,14 @@ const pathRows = Math.floor(13 / pathStep) + 1;
 const avatarHeadingOffset = 0.5;
 const CITY_UNLOCK_KEY = 'investly.city-unlocked.v1';
 const campProps: { name: string; position: [number, number]; size: number; rotation?: number; radius: number }[] = [
-  { name: 'tree', position: [-7, -5.4], size: 2.7, radius: 0.7 }, { name: 'tree', position: [7, -5.4], size: 2.7, radius: 0.7 },
-  { name: 'tree', position: [-7, 5.6], size: 2.7, radius: 0.7 }, { name: 'tree', position: [7, 5.6], size: 2.7, radius: 0.7 },
-  { name: 'tree', position: [-4.6, -5.8], size: 2.3, radius: 0.65 }, { name: 'tree', position: [4.7, -5.8], size: 2.3, radius: 0.65 },
-  { name: 'tree', position: [-4.6, 5.9], size: 2.3, radius: 0.65 }, { name: 'tree', position: [4.7, 5.9], size: 2.3, radius: 0.65 },
-  { name: 'rock', position: [-2, -5.15], size: 1.05, radius: 0.45 }, { name: 'rock', position: [2, -5.1], size: 0.95, radius: 0.4 },
-  { name: 'rock', position: [-2.3, 5.2], size: 0.9, radius: 0.38 }, { name: 'rock', position: [2.4, 5.1], size: 1.05, radius: 0.45 },
-  { name: 'log', position: [-1.7, 1.65], size: 1.7, rotation: Math.PI / 2, radius: 0.55 },
-  { name: 'log', position: [3.5, 1.45], size: 1.55, rotation: Math.PI / 2, radius: 0.5 },
-  { name: 'log-axe', position: [4.2, -0.8], size: 1.4, radius: 0.5 },
+  { name: 'tree', position: [-3, -5.7], size: 4.4, radius: 0.7 },
+  { name: 'tree', position: [3, -5.7], size: 4.4, radius: 0.7 },
+  { name: 'tree', position: [-7, 2.5], size: 3.6, radius: 0.65 },
+  { name: 'rock', position: [-5.7, -0.8], size: 1.5, radius: 0.7 },
+  { name: 'rock', position: [5.7, -0.8], size: 1.5, radius: 0.7 },
+  { name: 'rock', position: [6, 4.6], size: 1.4, radius: 0.65 },
+  { name: 'log', position: [3.6, 5.4], size: 2, rotation: -0.35, radius: 0.65 },
+  { name: 'log-axe', position: [-4.3, 4.5], size: 1.5, rotation: -0.4, radius: 0.65 },
 ];
 const cityBuildings: { name: string; position: [number, number]; size: number; radius: number }[] = [
   { name: 'city-apartments', position: [-4.5, -3.4], size: 2.8, radius: 1.5 },
@@ -42,9 +42,9 @@ const cityBuildings: { name: string; position: [number, number]; size: number; r
 ];
 const cityObstacles: [number, number, number][] = [[0, 0, 1.55], ...cityBuildings.map(({ position, radius }) => [position[0], position[1], radius] as [number, number, number])];
 const walkObstacles: [number, number, number][] = [
-  [-3.1, 0.7, 1.65], [2.55, 0, 0.9],
+  [spots.goal[0], spots.goal[2], 1.1],
   ...campProps.map(({ position, radius }) => [position[0], position[1], radius] as [number, number, number]),
-  [-4.8, -2.5, 0.7], [4.2, -2.4, 0.7], [4.5, 2.1, 0.7],
+  ...(['technology', 'energy', 'retail'] as const).map(sector => [spots[sector][0], spots[sector][2], 0.7] as [number, number, number]),
 ];
 function gridPoint(index: number): Point {
   return [pathMinX + (index % pathColumns) * pathStep, spots.player[1], pathMinZ + Math.floor(index / pathColumns) * pathStep];
@@ -57,7 +57,7 @@ function gridIndex(point: Point): number {
 function cellIsBlocked(x: number, z: number): boolean {
   const px = pathMinX + x * pathStep;
   const pz = pathMinZ + z * pathStep;
-  return walkObstacles.some(([ox, oz, radius]) => (px - ox) ** 2 + (pz - oz) ** 2 < radius ** 2);
+  return (Math.abs(px - spots.home[0]) < 4.8 && Math.abs(pz - spots.home[2]) < 3.9) || walkObstacles.some(([ox, oz, radius]) => (px - ox) ** 2 + (pz - oz) ** 2 < radius ** 2);
 }
 function cellIsWalkable(x: number, z: number, city = false): boolean {
   const px = pathMinX + x * pathStep;
@@ -65,7 +65,7 @@ function cellIsWalkable(x: number, z: number, city = false): boolean {
   const blocked = city
     ? cityObstacles.some(([ox, oz, radius]) => (px - ox) ** 2 + (pz - oz) ** 2 < radius ** 2)
     : cellIsBlocked(x, z);
-  return (city ? isOnCityWalkway(px, pz) : isOnCampWalkway(px, pz)) && !blocked;
+  return (city ? isOnCityWalkway(px, pz) : isOnCampGround(px, pz)) && !blocked;
 }
 function smoothWalkPath(route: Point[], city = false): Point[] {
   if (route.length < 3) return route;
@@ -200,7 +200,7 @@ function AnimatedAvatar({ avatarId, size, walking }: { avatarId: string; size: n
 function Shield({ amount, reduced }: { amount: number; reduced: boolean }) {
   const group = useRef<Group>(null); const target = amount ? 0.82 + Math.min(amount / 1500, 1) * 0.15 : 0;
   useFrame((_, delta) => { if (group.current) { const scale = reduced ? target : MathUtils.damp(group.current.scale.x, target, 5, delta); group.current.scale.set(scale, scale * 1.2, scale); } });
-  return <group position={spots.home}><group ref={group} scale={0}>
+  return <group position={spots.home} scale={tentSize / 3.2}><group ref={group} scale={0}>
     <mesh position={[0, 0.02, 0]}><sphereGeometry args={[2.45, 40, 24, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshPhysicalMaterial color="#48ffd0" emissive="#05b79f" emissiveIntensity={0.5} transparent opacity={0.15} roughness={0.1} depthWrite={false} side={2} /></mesh>
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .04, 0]}><ringGeometry args={[2.4, 2.46, 64]} /><meshBasicMaterial color="#bcfff1" transparent opacity={0.9} /></mesh>
     {[0,Math.PI/2].map(a=><mesh key={a} rotation={[0,a,0]}><torusGeometry args={[2.44,.017,6,60,Math.PI]} /><meshBasicMaterial color="#a3ffec" transparent opacity={0.7} /></mesh>)}
@@ -208,9 +208,17 @@ function Shield({ amount, reduced }: { amount: number; reduced: boolean }) {
 }
 function CampGrowthTree({ sector, value, reduced }: { sector: Sector; value: number; reduced: boolean }) {
   const group = useRef<Group>(null);
-  const target = 0.68 + Math.min(value / 1500, 1) * 0.38;
+  const target = 1 + Math.min(value / 1500, 1) * 0.25;
   useFrame((_, delta) => { if (group.current) group.current.scale.y = reduced ? target : MathUtils.damp(group.current.scale.y, target, 4, delta); });
-  return <group ref={group} position={spots[sector]}><Model name="camp/tree" size={2.5} /></group>;
+  return <group ref={group} position={spots[sector]}><Model name="camp/tree" size={sector === 'retail' ? 3.6 : 2.8} /></group>;
+}
+function CampGrass() {
+  const patches = [[-6, 3.5], [-5.3, 5.4], [-2.8, 5.6], [1.7, 5.1], [2, 6.5], [0.4, 6.8], [-5.5, -4.5], [5.5, -4.5], [-7, 0], [7, 0], [-4.4, -5.6], [4.4, -5.6], [-1.4, -6], [1.4, -6]];
+  return <group>{patches.map(([x, z], index) => <group key={index} position={[x, campGround, z]} rotation={[0, index * 1.7, 0]}>
+    {[-1, 0, 1].map(blade => <mesh key={blade} position={[blade * 0.13, 0.17, 0]} rotation={[0.1, blade, blade * -0.4]} castShadow>
+      <coneGeometry args={[0.16, 0.5, 3]} /><meshStandardMaterial color={index % 2 ? '#519c3b' : '#65ad42'} roughness={1} />
+    </mesh>)}
+  </group>)}</group>;
 }
 function Campfire({ progress, reduced }: { progress: number; reduced: boolean }) {
   const group = useRef<Group>(null);
@@ -223,7 +231,7 @@ function Campfire({ progress, reduced }: { progress: number; reduced: boolean })
     }
     if (light.current && !reduced) light.current.intensity = 1.1 + Math.sin(performance.now() / 180) * 0.25;
   });
-  return <group ref={group} position={spots.goal}><Model name="camp/campfire" size={1.8} /><Model name="camp/fire" size={1.3} position={[0, 0.06, 0]} /><pointLight ref={light} position={[0, 1.3, 0]} color="#ff8b32" intensity={1.1} distance={6} /></group>;
+  return <group ref={group} position={spots.goal}><Model name="camp/campfire" size={2.5} /><Model name="camp/fire" size={1.8} position={[0, 0.06, 0]} /><pointLight ref={light} position={[0, 1.3, 0]} color="#ff8b32" intensity={1.1} distance={6} /></group>;
 }
 function PlayerCharacter({ reduced, avatarId, path, positionRef, city }: { reduced: boolean; avatarId: string; path: Point[]; positionRef: { current: Point }; city: boolean }) {
   const group = useRef<Group>(null);
@@ -262,7 +270,7 @@ function PlayerCharacter({ reduced, avatarId, path, positionRef, city }: { reduc
     } else if (walkingRef.current) {
       walkingRef.current = false;
       setWalking(false);
-      faceTarget.current = Math.atan2(13 - group.current.position.x, 17 - group.current.position.z) - avatarHeadingOffset;
+      faceTarget.current = Math.atan2((city ? 13 : 0) - group.current.position.x, (city ? 17 : 22) - group.current.position.z) - avatarHeadingOffset;
     }
     if (!next && faceTarget.current !== null) {
       group.current.rotation.y = dampAngle(group.current.rotation.y, faceTarget.current, 10, delta);
@@ -273,7 +281,7 @@ function PlayerCharacter({ reduced, avatarId, path, positionRef, city }: { reduc
     positionRef.current = [group.current.position.x, spots.player[1], group.current.position.z];
     avatar.current.position.y = !reduced ? Math.sin(clock.elapsedTime * 2) * 0.035 : 0;
   });
-  return <group ref={group} position={positionRef.current}><mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}><ringGeometry args={[0.68, 0.76, 40]} /><meshBasicMaterial color="#fff4bd" /></mesh><group ref={avatar}><AnimatedAvatar avatarId={avatarId} size={3.5} walking={walking} /></group></group>;
+  return <group ref={group} position={positionRef.current}>{city && <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}><ringGeometry args={[0.68, 0.76, 40]} /><meshBasicMaterial color="#fff4bd" /></mesh>}<group ref={avatar}><AnimatedAvatar avatarId={avatarId} size={3.5} walking={walking} /></group></group>;
 }
 function CoinTrail({ from, to, amount, red = false, reduced }: { from: Point; to: Point; amount: number; red?: boolean; reduced: boolean }) {
   const group = useRef<Group>(null); const start = useRef<number | null>(null);
@@ -346,7 +354,9 @@ function CameraMotion({ trigger, reduced, zoom, cityUnlocked, onCityReveal }: { 
       if (t === 1) transition.current = 'city';
     }
     const pulse = reduced || transition.current === 'zoom-out' || transition.current === 'zoom-in' ? 0 : Math.sin(Math.min(time.current / 2.8, 1) * Math.PI) * 1.1;
-    camera.zoom = Math.min(size.width / 24.4, size.height / 20) * zoom * zoomFactor + pulse;
+    const cityView = transition.current === 'city' || transition.current === 'zoom-in';
+    camera.position.set(cityView ? 13 : 0, cityView ? 12 : 20, cityView ? 17 : 22);
+    camera.zoom = Math.min(size.width / (cityView ? 24.4 : 20.5), size.height / (cityView ? 20 : 15.5)) * zoom * zoomFactor + pulse;
     camera.lookAt(0, 2, 0); camera.updateProjectionMatrix();
   }); return null;
 }
@@ -376,7 +386,7 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
   const movePlayer = useCallback((destination: Point) => setPlayerPath(findWalkPath(playerPosition.current, destination, cityVisible)), [cityVisible]);
   const trigger = `${state.month}-${state.phase}-${state.decisionHistory.length}`;
   return <>
-    <color attach="background" args={['#dcecf0']} />
+    <color attach="background" args={['#dceff2']} />
     <ambientLight intensity={0.95} /><hemisphereLight args={['#eaf7ff', '#90a778', 1.15]} />
     <directionalLight position={[-7, 15, 9]} intensity={2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={14} shadow-camera-bottom={-14} shadow-normalBias={0.04} shadow-radius={3} />
     <CameraMotion trigger={trigger} reduced={reduced} zoom={zoom} cityUnlocked={cityUnlocked} onCityReveal={revealCity} /><MapClickSurface onMoveTo={movePlayer} />
@@ -389,11 +399,8 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
       </Html>
     </> : <>
       <CampIsland><Model name="camp/island" size={18} tints={islandTints} /></CampIsland>
-      <CampWalkways height={campGround - 0.015} />
-      <Model name="camp/tent" position={spots.home} size={3.2} />
-      <Html position={[spots.home[0], spots.home[1] + 3.45, spots.home[2]]} center>
-        <div style={{ padding: '4px 8px', borderRadius: 6, background: '#ffffffed', border: '1px solid #4a8171', color: '#174d3d', boxShadow: '0 2px 6px #173b3440', fontSize: 12, fontWeight: 700, lineHeight: 1.2, whiteSpace: 'nowrap' }}>Home</div>
-      </Html>
+      <group position={spots.home} scale={[1, 0.8, 1]}><Model name="camp/tent" size={tentSize} /></group>
+      <CampGrass />
       <Shield amount={state.emergencySavings} reduced={reduced} />
       <Campfire progress={goalProgress(state)} reduced={reduced} />
       {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <CampGrowthTree key={sector} sector={sector} value={townSectors(state)[sector]} reduced={reduced} />)}
@@ -431,5 +438,5 @@ export default function Town({ state, reduced, zoom, avatarId, avatarName }: { s
   const [available] = useState(() => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } });
   const fallback = <TextTown state={state} />;
   if (!available) return fallback;
-  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [13, 12, 17], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} data-city-ready={ready} aria-label={`${cityUnlocked ? 'City' : 'Campsite'} with ${avatarName}'s selected character`}><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} avatarId={avatarId} cityUnlocked={cityUnlocked} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Setting up your camp…</div>}</SceneBoundary>;
+  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [0, 20, 22], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} data-city-ready={ready} aria-label={`${cityUnlocked ? 'City' : 'Campsite'} with ${avatarName}'s selected character`}><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} avatarId={avatarId} cityUnlocked={cityUnlocked} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Setting up your camp…</div>}</SceneBoundary>;
 }

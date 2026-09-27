@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { motion, MotionConfig, useReducedMotion } from 'motion/react';
-import { ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, House, Info, RotateCcw, ShieldCheck, Sparkles, Sprout, Volume2, VolumeX, Wallet, Wrench, X, Landmark, ReceiptText } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, House, Info, RotateCcw, ShieldCheck, Sparkles, Sprout, Volume2, VolumeX, Wallet, Wrench, X, Landmark, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import story from './data/story.json';
 import { avatars, getAvatar } from './avatarCatalog';
 import type { AvatarId } from './avatarCatalog';
-import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, goalProgress, goalFunds, initialState, money, monthName, netWorth, portfolio, totalDebt, RULES } from './engine';
+import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, goalProgress, goalFunds, initialState, money, netWorth, portfolio, totalDebt, RULES } from './engine';
 import type { Account, GameState } from './engine';
 import { FUNDS, HOLDINGS, METHODS } from './investments';
 import type { Fund } from './investments';
@@ -41,6 +41,22 @@ function Modal({ title, children, onClose, wide = false }: { title: string; chil
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { ref.current?.showModal(); const bodyOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = bodyOverflow; }; }, []);
   return <dialog ref={ref} className={wide ? 'modal wide' : 'modal'} onCancel={onClose} onClick={e => { if (e.target === e.currentTarget) onClose(); }} aria-labelledby="modal-title"><div className="modal-top"><h2 id="modal-title">{title}</h2><button className="icon-button" aria-label="Close dialog" onClick={onClose}><X size={20} /></button></div>{children}</dialog>;
+}
+function ProfileEditor({ profile, onSave, onCancel }: { profile: PlayerProfile; onSave: (profile: PlayerProfile) => void; onCancel: () => void }) {
+  const [name, setName] = useState(profile.name);
+  const [avatarId, setAvatarId] = useState<AvatarId>(profile.avatarId);
+  function save(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const trimmed = name.trim().slice(0, 32);
+    if (trimmed) onSave({ ...profile, name: trimmed, avatarId });
+  }
+  return <form className="profile-editor" onSubmit={save}>
+    <label className="player-name-label" htmlFor="edit-player-name">Player name</label>
+    <input id="edit-player-name" className="player-name-input" value={name} onChange={e => setName(e.target.value)} maxLength={32} autoComplete="nickname" required autoFocus />
+    <h3 className="modal-subtitle">Choose your avatar</h3>
+    <div className="avatar-picker" role="radiogroup" aria-label="Choose your avatar">{avatars.map(avatar => <button type="button" role="radio" aria-checked={avatarId === avatar.id} aria-label={avatar.name} className={`avatar-option ${avatarId === avatar.id ? 'selected' : ''}`} key={avatar.id} onClick={() => setAvatarId(avatar.id)}><img src={avatar.preview} alt="" loading="lazy" /><span><b>{avatar.name}</b></span>{avatarId === avatar.id && <Check size={18} />}</button>)}</div>
+    <div className="profile-editor-actions"><button type="submit" className="primary-button" disabled={!name.trim()}>Save changes<Check size={17} /></button><button type="button" className="secondary-button" onClick={onCancel}>Cancel</button></div>
+  </form>;
 }
 function FullScreenPanel({ children, labelledBy = 'story-title', eyebrow, tone = 'default' }: { children: ReactNode; labelledBy?: string; eyebrow: string; tone?: 'default' | 'danger' | 'summary' }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -88,15 +104,6 @@ function FinancialUpdate({ before, after, explanation }: { before: GameState; af
     {HOLDINGS.some(symbol => before.holdings[symbol] !== after.holdings[symbol]) && <div className="update-holdings">{HOLDINGS.filter(symbol => before.holdings[symbol] !== after.holdings[symbol]).map(symbol => <p key={symbol}>{symbol}: {exactMoney(before.holdings[symbol])} → {exactMoney(after.holdings[symbol])}</p>)}</div>}
   </section>;
 }
-function NetWorthChart({ state }: { state: GameState }) {
-  const [hovered, setHovered] = useState<number | null>(null);
-  const points = [{ ...state.ledger[0], month: 0 }, ...state.ledger.filter((entry, i, all) => i === all.length - 1 || entry.month !== all[i + 1].month)];
-  const values = points.map(p => p.netWorth); const low = Math.min(0, ...values); const high = Math.max(1500, ...values) * 1.12;
-  const coords = points.map(p => ({ x: 12 + p.month / story.length * 590, y: 86 - (p.netWorth - low) / (high - low) * 70 }));
-  const path = coords.map((p, i) => `${i ? 'L' : 'M'} ${p.x} ${p.y}`).join(' '); const last = coords.at(-1)!;
-  const shown = hovered === null ? points.at(-1)! : points[hovered];
-  return <div className="net-chart"><div className="chart-header"><div><span className="small-label">{hovered === null ? 'Your net worth' : `${monthName(shown.month)} net worth`}</span><strong>{money(shown.netWorth)} <span className="chart-change">{netWorth(state) >= 1000 ? <ArrowUpRight size={13} /> : <ArrowDownLeft size={13} />}{money(netWorth(state) - 1000)} since the start</span></strong></div><span className="live-badge"><i /> YOUR STORY, SO FAR</span></div><svg viewBox="0 0 620 107" role="img" aria-label={`Net worth from $1,000 at the start to ${exactMoney(netWorth(state))} in ${monthName(state.month)}`} onPointerLeave={() => setHovered(null)}><defs><linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6a966d" stopOpacity="0.16" /><stop offset="100%" stopColor="#6a966d" stopOpacity="0" /></linearGradient></defs>{[25, 55, 85].map(y => <line key={y} x1="12" x2="603" y1={y} y2={y} stroke="#e9ece4" strokeDasharray="3 5" />)}<motion.path initial={false} animate={{ d: `${path} L ${last.x} 87 L 12 87 Z` }} fill="url(#chart-fill)" transition={{ duration: 0.5 }} /><motion.path initial={false} animate={{ d: path }} fill="none" stroke="#668a61" strokeWidth="2.4" strokeLinejoin="round" transition={{ duration: 0.5 }} /><circle cx={last.x} cy={last.y} r="7" fill="#7da774" opacity="0.16" /><circle cx={last.x} cy={last.y} r="3.5" fill="#668a61" />{coords.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="9" className="chart-point" tabIndex={0} role="button" aria-label={`${monthName(points[i].month)}: ${exactMoney(points[i].netWorth)}`} onFocus={() => setHovered(i)} onBlur={() => setHovered(null)} onPointerEnter={() => setHovered(i)} onClick={() => setHovered(i)}><title>{monthName(points[i].month)}: {exactMoney(points[i].netWorth)}</title></circle>)}{['START', 'M2', 'M4', 'M6'].map((m, i) => <text key={m} x={12 + i * (590 / 3)} y="105" textAnchor={i === 0 ? 'start' : i === 3 ? 'end' : 'middle'}>{m}</text>)}</svg><div className="chart-foot">Cash + savings + emergency fund + investments − debt</div></div>;
-}
 function Stat({ icon: Icon, label, amount, tone, changed = false }: { icon: LucideIcon; label: string; amount: number; tone: string; changed?: boolean }) {
   return <div className={`stat ${tone} ${changed ? 'stat-changed' : ''}`} title={exactMoney(amount)}><span><Icon size={15} />{label}</span><motion.strong key={amount} initial={{ opacity: 0.4, y: 3 }} animate={{ opacity: 1, y: 0 }}>{money(amount)}</motion.strong></div>;
 }
@@ -109,7 +116,7 @@ function HowItWorks({ state }: { state: GameState }) {
     <div><dt>Funds & returns</dt><dd>VAB, XUS, and QQQ are real funds used as examples. The pitch’s 2–4%, 7–11%, and 18% annual figures are illustrative assumptions, not verified historical CAGR, forecasts, or the returns used by this engine. Relative risk labels are simplified demo categories. BizTech is always simulated. Foreign exchange, taxes, distributions, account eligibility, contribution limits, and withdrawal rules are not modeled.</dd></div>
     <div><dt>Market source</dt><dd>{state.market.label} · {state.market.asOf}. {state.market.notice} Existing holdings change before each new $250 contribution. A run and its replay use the same frozen sequence.</dd></div>
     <div><dt>Miami goal</dt><dd>The penthouse choice compares cash + general savings + investments with a $1,000,000 goal. Emergency savings are excluded; debt stays visible separately. No property is bought or investments sold. The one-day penthouse rental costs exactly your available cash at that step. It spends that cash in full, with $0 course revenue initially; savings and investments stay untouched. Or keep grinding with your existing portfolio and contribution plan. Both endings stay in Month 6.</dd></div>
-    <div><dt>Accounting</dt><dd>Student debt uses a 6% APR ÷ 12. All balances round to cents. Net worth = cash + general savings + emergency savings + investments − all debt. Portfolio = contributions + market change − withdrawals. Rebalancing does not count as a new contribution. Financial effects are symbolic; the ledger has exact amounts.</dd></div>
+    <div><dt>Accounting</dt><dd>Student debt uses a 6% APR ÷ 12. All balances round to cents. Net worth = cash + general savings + emergency savings + investments − all debt. Portfolio = contributions + market change − withdrawals. Rebalancing does not count as a new contribution. Financial effects are symbolic; financial summaries show exact amounts.</dd></div>
     <div><dt>Controls</dt><dd>Click a choice to update your balances and advance immediately. Your financial update stays in the sidebar, with changed accounts highlighted. Only the final financial summary opens full-screen. Number keys 1–4 also choose immediately; Tab and Enter operate every control. The medical alert fills the screen. The pitch ends after your Month 6 investment decision. Replay and compare with your previous completed pitch. No real accounts or trades are created.</dd></div>
   </dl></>;
 }
@@ -126,12 +133,11 @@ export default function App() {
   useEffect(() => { transitionLock.current = false; }, [state]);
   const [profile, setProfile] = useState<PlayerProfile | null>(loadProfile);
   const [playerName, setPlayerName] = useState('');
-  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId | null>(null);
+  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId | null>('chicken-guy');
   const [selectedLiteracyLevel, setSelectedLiteracyLevel] = useState<FinancialLiteracyLevel | null>(null);
   const [previous, setPrevious] = useState<GameState | null>(loadPrevious);
-  const [modal, setModal] = useState<'how' | 'compare' | 'settings' | Account | Fund | null>(null);
+  const [modal, setModal] = useState<'how' | 'compare' | 'settings' | 'profile' | Account | Fund | null>(null);
   const [quietMotion, setQuietMotion] = useState(false);
-  const [tab, setTab] = useState<'town' | 'ledger'>('town');
   const [sound, setSound] = useState(false);
   const [storageUnavailable, setStorageUnavailable] = useState(false);
   const [loadingMarket, setLoadingMarket] = useState(true);
@@ -144,7 +150,7 @@ export default function App() {
   const title = completed ? 'Your choices added up.' : state.phase === 'penthouse' ? (penthouseOpen ? 'Your penthouse options' : 'Not quite penthouse money…') : result ? 'Here’s what happened' : accountStep ? 'Which account would you like to open?' : state.phase === 'method' ? 'You got a raise!' : fundStep ? 'Which ETF would you like to invest in?' : state.phase === 'assistance' ? 'Your emergency fund is empty!' : state.month === 6 && state.monthlyGrowth > 0 ? 'Omg congrats! Your investments grew.' : state.month === 6 && state.monthlyGrowth < 0 ? 'Markets had a rough month.' : event.title;
   const description = state.phase === 'penthouse' ? state.explanation : accountStep ? 'Pick a simulated account. Learn More explains each one.' : state.phase === 'method' ? (state.path === 'work' ? event.body : 'Your part-time role brings an extra $250/month in this demo. How would you like to invest?') : fundStep ? `${state.explanation} You have ${money(Math.min(state.cash, state.reservedGift + RULES.raise))} ready to invest.` : state.phase === 'assistance' ? 'You don’t have $200 in your emergency fund. You have to call Mom to ask for money :(' : state.month === 5 && state.path === 'university' ? 'Your part-time role brings an extra $250/month in this demo. Where should it go?' : state.month === 6 ? `${state.monthlyGrowth > 0 ? `You made ${exactMoney(state.monthlyGrowth)} this month!` : state.monthlyGrowth < 0 ? `Your investments fell ${exactMoney(-state.monthlyGrowth)} this month.` : 'Your cash and savings stayed out of the market.'} What would you like to do with this money?` : event.body;
   function play(cue = 'click_001') { if (sound) { const audio = new Audio(`/audio/${cue}.ogg`); audio.volume = 0.3; void audio.play().catch(() => {}); } }
-  function replay() { setLatestUpdate(null); setSummaryOpen(true); setPenthouseOpen(false); if (completed) setPrevious(state); setState(initialState(state.market)); setTab('town'); play('back_001'); }
+  function replay() { setLatestUpdate(null); setSummaryOpen(true); setPenthouseOpen(false); if (completed) setPrevious(state); setState(initialState(state.market)); play('back_001'); }
   function makeChoice(id: string) {
     if (loadingMarket || transitionLock.current || disabledReason(state, id)) return;
     transitionLock.current = true;
@@ -173,6 +179,12 @@ export default function App() {
   const goal = state.goal ? GOALS[state.goal] : null;
   const accountInfo = modal && modal in ACCOUNTS ? ACCOUNTS[modal as Account] : null;
   const fundInfo = modal && modal in FUNDS ? FUNDS[modal as Fund] : null;
+  function saveProfile(nextProfile: PlayerProfile) {
+    setProfile(nextProfile);
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile)); }
+    catch { setStorageUnavailable(true); }
+    setModal(null);
+  }
   function startJourney(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const name = playerName.trim().slice(0, 32);
@@ -217,11 +229,11 @@ export default function App() {
       <button className="simulation-button panel-card" onClick={() => setModal('how')}><Info size={23} />How this simulation works<ChevronRight size={19} /></button>
       <nav className="bottom-nav panel-card" aria-label="Game controls"><button aria-label="Replay" disabled={loadingMarket} onClick={replay}><RotateCcw />Replay</button><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
     </aside>
-    <section className="world-panel" aria-label="Your financial world"><div className="world-toolbar"><a href="/" className="world-brand"><Sprout size={21} />investly<span>.</span></a><div className="toolbar-actions"><div className="view-tabs" role="tablist" aria-label="World view"><button role="tab" aria-selected={tab === 'town'} onClick={() => setTab('town')} className={tab === 'town' ? 'active' : ''}><House size={15} />Your town</button><button role="tab" aria-selected={tab === 'ledger'} onClick={() => setTab('ledger')} className={tab === 'ledger' ? 'active' : ''}><ReceiptText size={15} />Your ledger</button></div><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
-      <div className="world-view" role="tabpanel" aria-label={tab === 'town' ? 'Your town' : 'Your ledger'}>{tab === 'town' ? <><Suspense fallback={<div className="scene-loading">Setting up your campsite…</div>}><Town state={state} reduced={reduced} zoom={1} avatarId={profile.avatarId} avatarName={profile.name} /></Suspense><div className="world-status"><span className="live-dot" />Month {state.month}<span className="status-divider" />{state.market.source === 'api' ? 'Historical API data' : 'Sample data'}</div></> : <div className="ledger-view"><div className="ledger-heading"><Landmark size={26} /><div><h3>Every dollar has a story.</h3><p>Exact balances after each month and decision.</p></div></div><NetWorthChart state={state} /><div className="ledger-scroll"><table><thead><tr><th>Month / event</th><th>Cash</th><th>Savings</th><th>Emergency fund</th><th>Investments</th><th>Debt</th><th>Net worth</th></tr></thead><tbody>{state.ledger.map((l, i) => <tr key={i}><th>{monthName(l.month)}<span>{l.label}</span></th><td>{exactMoney(l.cash)}</td><td>{exactMoney(l.savings)}</td><td>{exactMoney(l.emergencySavings)}</td><td>{exactMoney(l.investments)}</td><td>{exactMoney(l.debt)}</td><td>{exactMoney(l.netWorth)}</td></tr>)}</tbody></table></div><p className="fine-print">Total interest: {exactMoney(state.totalInterest)}. Contributed {exactMoney(state.totalContributed)} + market growth {exactMoney(state.totalMarketChange)} − withdrawn {exactMoney(state.totalWithdrawn)} = portfolio {exactMoney(portfolio(state))}.</p><p className="fine-print">{state.market.notice}</p></div>}</div>
+    <section className="world-panel" aria-label="Your financial world"><div className="world-toolbar"><a href="/" className="world-brand"><Sprout size={21} />investly<span>.</span></a><div className="toolbar-actions"><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
+      <div className="world-view"><Suspense fallback={<div className="scene-loading">Setting up your campsite…</div>}><Town state={state} reduced={reduced} zoom={1} avatarId={profile.avatarId} avatarName={profile.name} /></Suspense></div>
       <span className="simulation-note">Simulated money · {state.market.source === 'api' ? 'Historical market returns' : 'Sample returns'}</span>
     </section>
     {storyInPopup && <FullScreenPanel key={completed ? 'final-summary' : state.month === 3 ? 'medical-alert' : 'penthouse-options'} tone={completed ? 'summary' : state.month === 3 ? 'danger' : 'default'} eyebrow={completed ? 'YOUR FINAL SUMMARY · MONTH 6' : state.month === 3 ? 'UNEXPECTED EXPENSE · MONTH 3' : 'YOUR NEXT MOVE · MONTH 6'}>{storyContent}</FullScreenPanel>}
-    {modal && <Modal title={fundInfo || accountInfo ? `${modal} · Learn More` : modal === 'how' ? 'How Investly works' : modal === 'settings' ? 'Make yourself at home' : 'Two paths. A clearer picture.'} onClose={() => setModal(null)} wide={modal === 'compare'}>{fundInfo ? <><h3>{fundInfo.name}</h3><p className="modal-intro">{fundInfo.description}</p><p>{fundInfo.risk}. These are relative demo categories, not the issuer’s official risk rating.</p><p className="notice">Pitch illustration: {fundInfo.illustration} per year. This is not verified historical CAGR, a forecast, or the return used in your game.</p><p>Actual game changes come from the labelled monthly market sequence. All funds can lose value.</p><a href={fundInfo.url} target="_blank" rel="noreferrer">Read the fund issuer’s guide ↗</a></> : accountInfo ? <><p className="modal-intro">{accountInfo.description}</p><p>This is a simulated account. Real eligibility, contribution limits, and withdrawal rules apply.</p><a href={accountInfo.url} target="_blank" rel="noreferrer">Read the CRA account guide ↗</a></> : modal === 'how' ? <HowItWorks state={state} /> : modal === 'compare' ? <Compare state={state} previous={previous} /> : <div className="settings-list"><button aria-pressed={sound} onClick={() => setSound(!sound)}><Volume2 /><span><b>Game sounds</b><small>Feedback with every choice</small></span><span className={`toggle ${sound ? 'on' : ''}`} /></button><button aria-pressed={quietMotion} onClick={() => setQuietMotion(!quietMotion)}><Sparkles /><span><b>Reduce motion</b><small>Pause idle motion and coin animations</small></span><span className={`toggle ${quietMotion ? 'on' : ''}`} /></button><p className="fine-print">Your system’s reduced-motion preference is always respected.</p></div>}</Modal>}
+    {modal && <Modal title={fundInfo || accountInfo ? `${modal} · Learn More` : modal === 'how' ? 'How Investly works' : modal === 'profile' ? 'Edit your player' : modal === 'settings' ? 'Make yourself at home' : 'Two paths. A clearer picture.'} onClose={() => setModal(null)} wide={modal === 'compare'}>{fundInfo ? <><h3>{fundInfo.name}</h3><p className="modal-intro">{fundInfo.description}</p><p>{fundInfo.risk}. These are relative demo categories, not the issuer’s official risk rating.</p><p className="notice">Pitch illustration: {fundInfo.illustration} per year. This is not verified historical CAGR, a forecast, or the return used in your game.</p><p>Actual game changes come from the labelled monthly market sequence. All funds can lose value.</p><a href={fundInfo.url} target="_blank" rel="noreferrer">Read the fund issuer’s guide ↗</a></> : accountInfo ? <><p className="modal-intro">{accountInfo.description}</p><p>This is a simulated account. Real eligibility, contribution limits, and withdrawal rules apply.</p><a href={accountInfo.url} target="_blank" rel="noreferrer">Read the CRA account guide ↗</a></> : modal === 'how' ? <HowItWorks state={state} /> : modal === 'compare' ? <Compare state={state} previous={previous} /> : modal === 'profile' ? <ProfileEditor profile={profile} onSave={saveProfile} onCancel={() => setModal('settings')} /> : <div className="settings-list"><button onClick={() => setModal('profile')}><UserRound /><span><b>Change name or avatar</b><small>Customize your player</small></span><ChevronRight size={18} /></button>{storageUnavailable && <p className="fine-print">Changes last for this session; browser storage is unavailable.</p>}<button aria-pressed={sound} onClick={() => setSound(!sound)}><Volume2 /><span><b>Game sounds</b><small>Feedback with every choice</small></span><span className={`toggle ${sound ? 'on' : ''}`} /></button><button aria-pressed={quietMotion} onClick={() => setQuietMotion(!quietMotion)}><Sparkles /><span><b>Reduce motion</b><small>Pause idle motion and coin animations</small></span><span className={`toggle ${quietMotion ? 'on' : ''}`} /></button><p className="fine-print">Your system’s reduced-motion preference is always respected.</p></div>}</Modal>}
   </main></MotionConfig>;
 }

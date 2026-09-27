@@ -3,49 +3,13 @@ import type { ReactNode } from 'react';
 
 type Walkway = { from: [number, number]; to: [number, number]; width: number };
 
-export const campWalkways: Walkway[] = [
-  { from: [-6.25, -4.15], to: [6.25, -4.15], width: 0.78 },
-  { from: [-6.25, 4.15], to: [6.25, 4.15], width: 0.78 },
-  { from: [-6.25, -4.15], to: [-6.25, 4.15], width: 0.78 },
-  { from: [6.25, -4.15], to: [6.25, 4.15], width: 0.78 },
-  { from: [0.1, -6.1], to: [0.1, 6.1], width: 0.82 },
-  { from: [-6.25, 0.7], to: [-5.35, 0.7], width: 0.72 },
-  { from: [0.1, 0], to: [1.1, 0], width: 0.72 },
-];
-
-export function isOnCampWalkway(x: number, z: number): boolean {
-  return campWalkways.some(({ from, to, width }) => {
-    if (Math.abs(from[1] - to[1]) < 0.001) {
-      return Math.abs(z - from[1]) <= width / 2
-        && x >= Math.min(from[0], to[0]) - width / 2
-        && x <= Math.max(from[0], to[0]) + width / 2;
-    }
-    return Math.abs(x - from[0]) <= width / 2
-      && z >= Math.min(from[1], to[1]) - width / 2
-      && z <= Math.max(from[1], to[1]) + width / 2;
-  });
-}
-
-export function CampWalkways({ height }: { height: number }) {
-  return <group>
-    {campWalkways.map(({ from, to, width }, index) => {
-      const horizontal = Math.abs(from[1] - to[1]) < 0.001;
-      const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
-      return <RoundedBox key={index} args={horizontal ? [length, 0.045, width] : [width, 0.045, length]} radius={0.08} smoothness={2}
-        position={[(from[0] + to[0]) / 2, height, (from[1] + to[1]) / 2]} receiveShadow castShadow>
-        <meshStandardMaterial color="#b9996c" roughness={1} />
-      </RoundedBox>;
-    })}
-  </group>;
+// The reference campsite is an open clearing; movement stays on the island.
+export function isOnCampGround(x: number, z: number): boolean {
+  return (x / 8.1) ** 2 + (z / 7.4) ** 2 <= 1;
 }
 
 export function CampIsland({ children }: { children?: ReactNode }) {
-  return <group position={[0, 0.16, 0]} scale={[1, 0.075, 1]}>
-    <RoundedBox args={[17.6, 0.45, 14.8]} radius={0.2} smoothness={3} position={[0, -0.22, 0]} receiveShadow castShadow>
-      <meshStandardMaterial color="#654939" roughness={1} />
-    </RoundedBox>
-    {children}
-  </group>;
+  return <group position={[0, -5.5, 0]} scale={[1, 0.4, 1]}>{children}</group>;
 }
 
 const cityRoads: Walkway[] = [

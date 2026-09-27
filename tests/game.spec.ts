@@ -67,7 +67,7 @@ test('mobile red alert, savings path, and final summary work without WebGL or st
   await pick(page,'Back to dashboard');await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByRole('progressbar',{name:'Miami penthouse goal'})).toBeVisible();
   await pick(page,'View final summary');await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await pick(page,'Back to dashboard');
-  await page.getByRole('tab',{name:'Your ledger'}).click();await expect(page.getByRole('heading',{name:'Every dollar has a story.'})).toBeVisible();
+  await expect(page.getByRole('tab',{name:'Your ledger'})).toHaveCount(0);await expect(page.locator('.world-status')).toHaveCount(0);
   await pick(page,'How this simulation works');await expect(page.getByRole('dialog')).toContainText('Your financial update stays in the sidebar');await pick(page,'Close dialog');
 });
 test('BizTech and managed investing preserve fund balances through the automatic progression',async({page})=>{
@@ -105,4 +105,37 @@ test('sidebar summaries have no advance button and dark square backgrounds only 
   await expect(page.locator('.update-changed')).toHaveCount(3);await expect(page.locator('.financial-update')).toContainText('$200 moved into your emergency fund');
   await pick(page,'Take money from my emergency fund');await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.profile')).toContainText('Month 4');
   await expect(page.locator('.financial-update')).toContainText('covered the $200 bill');
+});
+
+test('edit player name and avatar without resetting finances, then persist and cancel drafts',async({page})=>{
+  test.setTimeout(120000);
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await start(page);await expect(page.locator('[data-city-ready="true"]')).toBeVisible({timeout:30000});
+  await expect(page.locator('.view-tabs, .ledger-view, .world-status')).toHaveCount(0);
+  await pick(page,'Start working');await expect(page.locator('.profile')).toContainText('Month 2');
+  const finances=await page.locator('.finances').innerText();
+  await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
+  await expect(page.getByRole('dialog',{name:'Edit your player'})).toBeVisible();
+  await expect(page.getByLabel('Player name',{exact:true})).toHaveValue('Maya');
+  await page.getByLabel('Player name',{exact:true}).fill('   ');await expect(page.getByRole('button',{name:'Save changes',exact:true})).toBeDisabled();
+  await page.getByLabel('Player name',{exact:true}).fill('  Alex  ');await page.getByRole('radio',{name:'Generic Male',exact:true}).click();
+  const avatarLoaded=page.waitForResponse(response=>response.url().endsWith('/models/avatars/generic-male.glb') && response.ok());
+  await pick(page,'Save changes');await avatarLoaded;
+  await expect(page.locator('.profile h2')).toHaveText('Alex');await expect(page.locator('.profile img')).toHaveAttribute('src','/models/avatars/generic-male.webp');
+  await expect(page.locator('[data-city-ready="true"]')).toHaveAttribute('aria-label',"Campsite with Alex's selected character");
+  await expect(page.locator('.profile')).toContainText('Month 2');expect(await page.locator('.finances').innerText()).toBe(finances);
+  await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
+  await page.getByLabel('Player name',{exact:true}).fill('Discard me');await page.getByRole('radio',{name:'Chicken Guy',exact:true}).click();await pick(page,'Cancel');
+  await page.getByRole('button',{name:/Change name or avatar/}).click();await expect(page.getByLabel('Player name',{exact:true})).toHaveValue('Alex');await expect(page.getByRole('radio',{name:'Generic Male',exact:true})).toHaveAttribute('aria-checked','true');
+  await page.screenshot({path:'artifacts/edit-player.png'});await page.keyboard.press('Escape');
+  await page.reload();await expect(page.locator('.profile h2')).toHaveText('Alex');await expect(page.locator('.profile img')).toHaveAttribute('src','/models/avatars/generic-male.webp');expect(errors).toEqual([]);
+});
+test('player edits work on mobile when browser storage is unavailable',async({page})=>{
+  await noWebGL(page);await page.addInitScript(()=>{Storage.prototype.getItem=()=>{throw new Error('Blocked');};Storage.prototype.setItem=()=>{throw new Error('Blocked');};});
+  await page.setViewportSize({width:390,height:650});await start(page);await pick(page,'Start working');
+  await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
+  await page.getByLabel('Player name',{exact:true}).fill('Jo');await page.getByRole('radio',{name:'Food Worker',exact:true}).click();
+  await pick(page,'Save changes');await expect(page.locator('.profile h2')).toHaveText('Jo');await expect(page.locator('.profile')).toContainText('Food Worker');await expect(page.locator('.profile')).toContainText('Month 2');await expect(page.locator('.stat.cash').first()).toContainText('$1,800');
+  await pick(page,'Settings');await expect(page.getByRole('dialog')).toContainText('Changes last for this session');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
 });
