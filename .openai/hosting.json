@@ -1,12 +1,5 @@
 {
   "project_id": "appgprj_6ab974ea2fd881918eb039b31ef58017",
-  "build": {
-    "command": "npm run build:site"
-  },
-  "worker": {
-    "entrypoint": "dist/worker.js"
-  },
-  "assets": {
-    "directory": "dist"
-  }
+  "d1": null,
+  "r2": null
 }
