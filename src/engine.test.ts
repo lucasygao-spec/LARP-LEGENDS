@@ -125,7 +125,7 @@ test('empty emergency fund opens the Mom alternative without advancing time or f
 });
 test('birthday gift arrives once; all account substeps stay in the same month',()=>{
   const m4=play(['work','save-emergency','use-emergency']);
-  for(const account of ['TFSA','RRSP','FHSA']) { const pending=choose(m4,'open'); const opened=choose(pending,account); assert.equal(opened.month,4); assert.equal(opened.cash,m4.cash); assert.equal(opened.account,account); assert.equal(opened.reservedGift,1000); assert.throws(()=>choose(opened,account)); check(opened); }
+  for(const account of ['TFSA','RRSP','FHSA']) { const pending=choose(m4,'open'); const opened=choose(pending,account); assert.equal(opened.month,4); assert.equal(opened.cash,m4.cash); assert.equal(opened.account,account); assert.equal(homeUpgradeUnlocked(opened),account === 'TFSA'); assert.equal(opened.reservedGift,1000); assert.throws(()=>choose(opened,account)); check(opened); }
   const saved=choose(m4,'birthday-savings'); assert.equal(saved.savings,1000); assert.equal(saved.emergencySavings,0); assert.equal(saved.cash,m4.cash-1000); check(saved);
   const biz=choose(m4,'biztech'); assert.equal(biz.holdings.BIZTECH,1000); assert.equal(biz.cash,m4.cash-1000); assert.equal(biz.account,null); check(biz);
 });
@@ -203,13 +203,20 @@ test('API failures fall back to visibly labelled samples',async()=>{
   assert.equal((await loadMarketFeed()).source,'sample');
 });
 
-test('home upgrades only after the raise is invested in an ETF and resets on replay', () => {
+test('home upgrades when opening a TFSA or investing the raise and resets on replay', () => {
   const before = play(['work', 'skip-emergency', 'ask-mom', 'biztech']);
   assert.equal(homeUpgradeUnlocked(before), false, 'birthday stock purchase does not unlock the house');
   const method = choose(before, 'one-etf');
   const account = choose(method, 'TFSA');
   assert.equal(homeUpgradeUnlocked(method), false);
-  assert.equal(homeUpgradeUnlocked(account), false, 'opening an account is not an ETF investment');
+  assert.equal(homeUpgradeUnlocked(account), true, 'opening a TFSA upgrades the home before any ETF purchase');
+  assert.equal(account.cash, method.cash, 'the home reward charges no money');
+  assert.deepEqual(account.holdings, method.holdings);
+  for (const otherAccount of ['RRSP', 'FHSA']) {
+    const opened = choose(method, otherAccount);
+    assert.equal(homeUpgradeUnlocked(opened), false);
+    assert.equal(homeUpgradeUnlocked(choose(opened, 'XUS')), true);
+  }
   for (const fund of ['VAB', 'XUS', 'QQQ']) {
     const invested = choose(account, fund);
     assert.equal(homeUpgradeUnlocked(invested), true);

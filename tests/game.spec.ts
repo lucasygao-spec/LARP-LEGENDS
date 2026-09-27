@@ -40,7 +40,12 @@ test('campsite story advances immediately, red medical alert, final fullscreen s
   await pick(page,'Take money from my emergency fund');await expect(page.getByRole('heading',{name:'Your emergency fund is empty!'})).toBeVisible();
   await pick(page,'Call Mom to ask for money :(');await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.locator('.profile')).toContainText('Month 4');await expect(page.locator('.financial-update')).toContainText('Mom gave you CA$200.00');
-  await pick(page,'Open an account');await pick(page,'TFSA');await expect(page.getByRole('heading',{name:'You got a raise!'})).toBeVisible();
+  await pick(page,'Open an account');
+  await expect(page.locator('[data-home-upgraded]')).toHaveAttribute('data-home-upgraded','false');
+  await pick(page,'TFSA');
+  await expect(page.locator('[data-home-upgraded]')).toHaveAttribute('data-home-upgraded','true');
+  await expect(page.getByText('Home',{exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'You got a raise!'})).toBeVisible();
   await page.keyboard.press('4');await expect(page.getByRole('heading',{name:'Which ETF would you like to invest in?'})).toBeVisible();
   await pick(page,'Learn more about QQQ');await expect(page.getByRole('dialog')).toContainText('not verified historical CAGR');await page.keyboard.press('Escape');
   await page.screenshot({path:'artifacts/pitch-etfs.png',fullPage:true});
