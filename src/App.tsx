@@ -208,7 +208,6 @@ export default function App() {
   const playerAvatar = getAvatar(profile.avatarId);
   const storyInPopup = state.month === 3 || (state.phase === 'penthouse' && penthouseOpen) || (completed && summaryOpen);
   const storyContent = <section className="story-card panel-card">
-        <div className="step-track" aria-label={`Pitch step ${Math.min(state.month, story.length)} of ${story.length}`}>{Array.from({length: story.length}, (_, i) => <span key={i} className={i + 1 < state.month || completed ? 'done' : i + 1 === state.month ? 'current' : ''} />)}</div>
         <motion.div key={`${state.month}-${state.phase}`} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.16 }}>
           <div className="story-heading">{result ? <Check /> : state.month === 3 ? <Wrench /> : <CalendarDays />}<h1 id="story-title" ref={heading} tabIndex={-1}>{title}</h1></div>
           {completed ? <><p className="story-description">{state.explanation}</p><div className="year-result"><span>Your portfolio after the pitch</span><strong>{exactMoney(portfolio(state))}</strong><p>{money(state.totalContributed)} contributed · {exactMoney(state.totalMarketChange)} growth · {money(state.totalWithdrawn)} withdrawn</p></div><dl className="ending-summary" aria-label="Final financial summary">{([
@@ -220,7 +219,17 @@ export default function App() {
       </section>;
   return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="game-layout">
     <aside className="decision-panel" aria-label="Your decisions">
-      <div className="profile panel-card"><div className="avatar"><img src={playerAvatar.preview} alt={`${playerAvatar.name} avatar`} /></div><div><h2>{profile.name}</h2><p>{playerAvatar.name} <span>•</span> Age {state.age} · Month {state.month}</p><small className={`literacy-badge level-${profile.literacyLevel}`}>Level {profile.literacyLevel} · {literacyLevels[profile.literacyLevel - 1].name}</small></div></div>
+      <div className="profile panel-card">
+        <button type="button" className="avatar" aria-label={`Edit player, currently ${profile.name}, ${playerAvatar.name}`} title="Change name or avatar" onClick={() => setModal('profile')}><img src={playerAvatar.preview} alt="" /></button>
+        <div className="profile-details">
+          <div className="profile-heading"><h2 title={profile.name}>{profile.name}</h2><span className="profile-age">Age {state.age}</span></div>
+          <div className="profile-meter profile-month">
+            <span className="profile-meter-label">Month <b>{state.month}/{story.length}</b></span>
+            <div className="profile-month-bar" role="progressbar" aria-label={`Month ${state.month} of ${story.length}`} aria-valuenow={state.month} aria-valuemin={1} aria-valuemax={story.length}>{story.map((_, i) => <span key={i} className={i < state.month ? 'complete' : ''} />)}</div>
+          </div>
+          <div className="profile-context"><small>{playerAvatar.name}</small><small className={`literacy-badge level-${profile.literacyLevel}`}>Level {profile.literacyLevel} · {literacyLevels[profile.literacyLevel - 1].name}</small></div>
+        </div>
+      </div>
       {completed ? <section className="story-card panel-card"><h2>Your story is complete</h2><button className="primary-button" onClick={() => setSummaryOpen(true)}>View final summary</button></section> : storyInPopup ? <section className="story-card panel-card alert-placeholder"><Info /><h2>{state.month === 3 ? "An unexpected expense" : "Your penthouse options"}</h2><p>Choose an option in the popup to continue.</p></section> : storyContent}
       {!completed && latestUpdate && <FinancialUpdate {...latestUpdate} />}
       <section className="finances panel-card"><h2><Wallet size={28} />Your Finances</h2><div className="stat-grid"><Stat icon={Coins} label="Cash" changed={accountChanged('Cash')} amount={state.cash} tone="cash" /><Stat icon={ChartNoAxesCombined} label="Investments" changed={accountChanged('Investments')} amount={portfolio(state)} tone="investment" /><Stat icon={CreditCard} label="Debt" changed={accountChanged('Debt')} amount={totalDebt(state)} tone="debt" /><Stat icon={Wallet} label="Savings" changed={accountChanged('General savings')} amount={state.savings} tone="cash" /><Stat icon={ShieldCheck} label="Emergency Fund" changed={accountChanged('Emergency fund')} amount={state.emergencySavings} tone="savings" /></div><div className="account-status"><Landmark size={15} />{state.account ? `${state.account} · Open` : portfolio(state) ? 'Unregistered demo portfolio' : 'Investment account · Not opened'}</div>{state.recurring && <p className="recurring-status">Raise plan: $250/month → {state.recurring === 'invest' ? state.selectedFund : state.recurring === 'savings' ? 'Savings' : 'Emergency fund'}</p>}{state.method && <p className="recurring-status">{METHODS.find(m => m.id === state.method)?.title}</p>}</section>

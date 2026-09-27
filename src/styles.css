@@ -92,3 +92,34 @@
 .profile-editor .player-name-label{margin-top:8px;color:#244335}.profile-editor .player-name-input{width:100%;max-width:none;background:#f3f7f1;color:#244335;border-color:#9ab9a9}.profile-editor .avatar-picker{grid-template-columns:repeat(3,minmax(0,1fr));max-height:35dvh}.profile-editor .avatar-option{color:#effff8}.profile-editor-actions{display:flex;gap:10px;align-items:stretch;margin-top:18px}.profile-editor-actions .primary-button,.profile-editor-actions .secondary-button{margin:0;flex:1}.profile-editor-actions button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:480px){.profile-editor .avatar-picker{grid-template-columns:repeat(2,minmax(0,1fr))}.profile-editor-actions{flex-direction:column}}
 .profile-editor-actions .primary-button{background:#007d68;color:#fff}.profile-editor-actions .secondary-button{color:#effff8}
+
+/* Refinement profile and responsive layout, adapted to the current story. */
+@media(max-width:760px){
+  html,body,#root{width:100%;height:100%;min-height:100dvh}
+  body:has(.game-layout){overflow:hidden;background:#05090a}
+  #root:has(.game-layout){overflow:hidden}
+  .game-layout{position:relative;display:flex;flex-direction:column;width:100%;height:100dvh;min-height:0;max-height:100dvh;overflow-x:hidden;overflow-y:auto;border:3px solid #182124;border-radius:42px;background:#003c3d;box-shadow:0 0 0 1px #7dfdeb40,inset 0 0 0 1px #80fff026;scrollbar-width:none}
+  .game-layout::-webkit-scrollbar{display:none}
+  .game-layout::before{content:'';position:sticky;top:10px;z-index:30;align-self:center;display:block;flex:0 0 34px;width:120px;height:34px;margin:10px auto -44px;border:1px solid #1b2125;border-radius:999px;background:radial-gradient(circle at 82% 50%,#35457d 0 3px,#080a0c 4px),linear-gradient(#090a0c,#000);box-shadow:0 2px 8px #0008,inset 0 1px 1px #ffffff20;pointer-events:none}
+  .world-toolbar{top:max(56px,env(safe-area-inset-top,0px))}
+  .decision-panel{border-radius:30px;padding:58px 17px calc(17px + env(safe-area-inset-bottom,0px));margin-top:-22px}
+}
+@media(min-width:761px){
+  .game-layout{background:#002f32}
+  .decision-panel{box-shadow:8px 0 22px #001b1d55,22px 0 44px #003f4230}
+  .decision-panel::-webkit-scrollbar-button{display:none;width:0;height:0}
+  .decision-panel::-webkit-scrollbar-thumb{border-radius:999px}
+}
+
+.profile .avatar{padding:0;cursor:pointer;transition:transform .18s,box-shadow .18s}.profile .avatar:hover{transform:scale(1.05);box-shadow:0 0 0 3px #0cd0b660,0 3px 14px #002f3780}
+.profile-month{display:flex;align-items:center;gap:9px;margin-top:5px;color:#d3f3e8;font-size:12px;white-space:nowrap}.profile-month>span{min-width:76px}.profile-month-bar{display:grid;grid-template-columns:repeat(12,minmax(4px,1fr));gap:3px;flex:1;max-width:190px}.profile-month-bar>span{height:7px;border-radius:5px;background:#a2d4c44d}.profile-month-bar>span.complete{background:#42dbb1;box-shadow:0 0 6px #42dbb160}
+.profile{align-items:flex-start;gap:clamp(8px,1vw,12px);padding:clamp(6px,.85vw,12px) clamp(6px,1vw,14px);min-height:clamp(124px,12vw,176px);border:2px solid #10cbb9;border-radius:clamp(18px,2.2vw,32px);background:linear-gradient(135deg,#08685f,#00544d 72%);box-shadow:inset 0 1px 1px #79fff01c,0 6px 18px #002d2d25}
+.profile .avatar{align-self:flex-start;width:clamp(42px,4.2vw,60px);height:clamp(42px,4.2vw,60px);border-width:clamp(3px,.35vw,5px)}.profile-details{display:grid;flex:1;min-width:0;gap:clamp(8px,1vw,14px);margin-top:clamp(5px,.7vw,10px)}
+.profile-heading{display:grid;grid-template-columns:minmax(0,.72fr) minmax(0,1fr);align-items:center;gap:clamp(4px,.65vw,9px);min-width:0}.profile h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:'Manrope',sans-serif;font-size:clamp(25px,2.5vw,36px);line-height:1;letter-spacing:-1.2px;font-weight:800;color:#f4fffb;text-shadow:0 2px 12px #003d3860}.profile-age{font-family:'Manrope',sans-serif;font-size:clamp(15px,1.5vw,22px);font-weight:650;letter-spacing:-.3px;color:#e9fff6;text-align:center;white-space:nowrap}
+.profile-meter{display:grid;grid-template-columns:minmax(0,.72fr) minmax(0,1fr);align-items:center;gap:clamp(4px,.65vw,9px);min-width:0}.profile-meter-label{display:block;min-width:0;overflow:hidden;color:#7ee6b0;font-family:'Manrope',sans-serif;font-size:clamp(11px,1.05vw,15px);font-weight:700;letter-spacing:-.2px;text-overflow:ellipsis;white-space:nowrap}.profile-month{margin-top:0}.profile-month .profile-meter-label{color:#e5fff7;font-size:clamp(13px,1.25vw,18px)}.profile-meter-label b{font-weight:800}
+.profile-month-bar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));min-width:0;height:clamp(22px,2.3vw,34px);gap:2px;max-width:none;flex:initial}.profile-month-bar>span{height:100%;border-radius:6px;background:#a8d8cd55;transition:background .3s,box-shadow .3s}.profile-month-bar>span.complete{background:#42dbb1;box-shadow:0 0 8px #42dbb155}
+.profile-month{grid-template-columns:minmax(0,1fr);gap:clamp(6px,.8vw,11px)}.profile-month-bar{height:clamp(28px,3vw,44px)}
+@media(max-width:760px){.profile{min-height:124px;gap:8px;padding:8px;border-radius:18px}.profile .avatar{width:42px;height:42px;border-width:3px}.profile-details{gap:10px;margin-top:5px}.profile h2{font-size:25px}.profile-age{font-size:15px}.profile-heading{gap:5px}.profile-meter{grid-template-columns:minmax(0,.72fr) minmax(0,1fr);gap:5px}.profile-meter-label{font-size:11px}.profile-month .profile-meter-label{font-size:13px}.profile-month-bar{height:24px;gap:2px}}
+@media(max-width:760px){.profile{min-height:0}.profile-month{grid-template-columns:minmax(0,1fr);gap:5px}.profile-month-bar{height:28px}}
+@media(max-width:380px){.profile{min-height:0;padding:6px;border-radius:16px}.profile .avatar{width:40px;height:40px}.profile-details{gap:10px;margin-top:5px}.profile h2{font-size:24px}.profile-age{font-size:14px}.profile-heading,.profile-meter{gap:4px}.profile-meter-label{font-size:10px}.profile-month .profile-meter-label{font-size:12px}.profile-month-bar{height:26px;gap:1px}}
+.profile-context{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;color:#c8eee4;font-size:12px}.profile-context .literacy-badge{margin-top:0}.profile .avatar:focus-visible{outline:3px solid #b7ffde;outline-offset:3px}
