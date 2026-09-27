@@ -1,0 +1,23 @@
+Character models from CUTES Part One by J-Toastie, via Poly Pizza.
+Bundle: https://poly.pizza/bundle/CUTES-Part-One-WD91WrT0gx
+Creator: https://poly.pizza/u/J-Toastie
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+License text: https://creativecommons.org/licenses/by/3.0/
+
+Included model files:
+- Santa Claus
+- Food Worker
+- Generic Male
+- Generic Female
+- Citizen 1
+- Citizen 2
+- Citizen 3
+- Male Officer
+- Female Officer
+- Crypto Bro
+- Prisoner
+- Retail Worker
+- Chicken Guy
+
+Model placement and display scale are adjusted in the app. The character model
+geometry and textures are otherwise included as downloaded.

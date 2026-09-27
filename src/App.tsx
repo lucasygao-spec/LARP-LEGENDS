@@ -1,14 +1,31 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { AnimatePresence, motion, MotionConfig, useReducedMotion } from 'motion/react';
 import { ArrowDownLeft, ArrowRight, ArrowUpRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, House, Info, RotateCcw, ShieldCheck, Sparkles, Sprout, Volume2, VolumeX, Wallet, Wrench, X, Landmark, ReceiptText } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import story from './data/story.json';
+import { avatars, getAvatar } from './avatarCatalog';
+import type { AvatarId } from './avatarCatalog';
 import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, goalProgress, initialState, investmentAmount, money, monthName, netWorth, portfolio } from './engine';
 import type { Account, GameState } from './engine';
 import { loadMarketFeed } from './market';
 const Town = lazy(() => import('./Town'));
 const STORAGE_KEY = 'investly.previous-run.v2';
+const PROFILE_KEY = 'investly.player.v1';
+type FinancialLiteracyLevel = 1 | 2 | 3;
+type PlayerProfile = { name: string; avatarId: AvatarId; literacyLevel: FinancialLiteracyLevel };
+const literacyLevels: { level: FinancialLiteracyLevel; name: string; description: string }[] = [
+  { level: 1, name: 'Money Rookie', description: "I'm beginning to understand." },
+  { level: 2, name: 'Money Minded', description: "I'm starting to think ahead." },
+  { level: 3, name: 'Financially Savvy', description: 'I understand the game.' },
+];
+function loadProfile(): PlayerProfile | null {
+  try {
+    const data = JSON.parse(localStorage.getItem(PROFILE_KEY) || 'null');
+    if (typeof data?.name !== 'string' || !data.name.trim() || !avatars.some(avatar => avatar.id === data.avatarId) || ![1, 2, 3].includes(data.literacyLevel)) return null;
+    return { name: data.name.trim().slice(0, 32), avatarId: data.avatarId, literacyLevel: data.literacyLevel };
+  } catch { return null; }
+}
 function loadPrevious(): GameState | null {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
@@ -38,6 +55,7 @@ function Stat({ icon: Icon, label, amount, tone }: { icon: LucideIcon; label: st
 function HowItWorks({ state }: { state: GameState }) {
   return <><p className="modal-intro">Age 18. Twelve months. One simple investing journey.</p><dl className="rules">
     <div><dt>Starting point</dt><dd>$1,000 cash. No investments, emergency savings, debt, account, or goal. All balances are simulated Canadian dollars.</dd></div>
+    <div><dt>Your character</dt><dd>On your first visit, choose a display name and person avatar. Your choice appears in your profile and the 3D town, and is saved on this device.</dd></div>
     <div><dt>One decision per month</dt><dd>Confirm a choice, see the result, then continue. Opening an account is part of that same month. Months 7–12 follow your recurring plan; choose your goal after Month 12. Keyboard: Tab, Enter, or number keys 1–4 to select.</dd></div>
     <div><dt>Simple monthly budget</dt><dd>After essentials: University adds $100, Work adds $400, Gap Year spends $100. University borrows $5,000 directly for tuition. Any gap-year cash shortfall is borrowed. A $1,000 gift arrives in Month 2; a $500 bonus in Month 4.</dd></div>
     <div><dt>Debt</dt><dd>All debt uses a fictional 6% APR, charged monthly before payments. This is a simplified shared rate, not a real student-loan or credit offer. No mandatory repayments are modeled.</dd></div>
@@ -55,6 +73,10 @@ function Compare({ state, previous }: { state: GameState; previous: GameState | 
 }
 export default function App() {
   const [state, setState] = useState(initialState);
+  const [profile, setProfile] = useState<PlayerProfile | null>(loadProfile);
+  const [playerName, setPlayerName] = useState('');
+  const [selectedAvatarId, setSelectedAvatarId] = useState<AvatarId | null>(null);
+  const [selectedLiteracyLevel, setSelectedLiteracyLevel] = useState<FinancialLiteracyLevel | null>(null);
   const [previous, setPrevious] = useState<GameState | null>(loadPrevious);
   const [selected, setSelected] = useState<string | null>(null);
   const [modal, setModal] = useState<'how' | 'compare' | 'settings' | Account | null>(null);
@@ -90,9 +112,30 @@ export default function App() {
   }, [choices, modal, repairNotice, loadingMarket, state]);
   const goal = state.goal ? GOALS[state.goal] : null;
   const accountInfo = modal && modal in ACCOUNTS ? ACCOUNTS[modal as Account] : null;
+  function startJourney(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const name = playerName.trim().slice(0, 32);
+    if (!name || !selectedAvatarId || !selectedLiteracyLevel || loadingMarket) return;
+    const nextProfile = { name, avatarId: selectedAvatarId, literacyLevel: selectedLiteracyLevel };
+    try { localStorage.setItem(PROFILE_KEY, JSON.stringify(nextProfile)); }
+    catch { setStorageUnavailable(true); }
+    setProfile(nextProfile);
+  }
+  if (!profile) return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="onboarding-screen"><form className="onboarding-card" onSubmit={startJourney}>
+    <h1>Set up your character</h1>
+    <label className="player-name-label" htmlFor="player-name">Your name</label>
+    <input id="player-name" className="player-name-input" autoComplete="nickname" maxLength={32} value={playerName} onChange={e => setPlayerName(e.target.value)} placeholder="Your name" required />
+    <div className="avatar-picker-heading"><h2>Choose your character</h2></div>
+    <div className="avatar-picker" role="radiogroup" aria-label="Choose your character">{avatars.map(avatar => <button type="button" role="radio" aria-checked={selectedAvatarId === avatar.id} aria-label={avatar.name} className={`avatar-option ${selectedAvatarId === avatar.id ? 'selected' : ''}`} key={avatar.id} onClick={() => setSelectedAvatarId(avatar.id)}><img src={avatar.preview} alt="" loading="lazy" /><span><b>{avatar.name}</b></span>{selectedAvatarId === avatar.id && <Check size={18} />}</button>)}</div>
+    <div className="avatar-picker-heading literacy-heading"><h2>How familiar are you with money?</h2></div>
+    <div className="literacy-picker" role="radiogroup" aria-label="Financial literacy level">{literacyLevels.map(option => <button type="button" role="radio" aria-checked={selectedLiteracyLevel === option.level} className={`literacy-option level-${option.level} ${selectedLiteracyLevel === option.level ? 'selected' : ''}`} key={option.level} onClick={() => setSelectedLiteracyLevel(option.level)}><b>Level {option.level} — {option.name}</b><small>“{option.description}”</small></button>)}</div>
+    {loadingMarket ? <p className="onboarding-status" role="status">Preparing your financial world…</p> : <button type="submit" className="primary-button onboarding-submit" disabled={!playerName.trim() || !selectedAvatarId || !selectedLiteracyLevel}>Start</button>}
+    {storageUnavailable && <p className="onboarding-status">Your profile will be kept for this session, but this browser can’t save it for next time.</p>}
+  </form></main></MotionConfig>;
+  const playerAvatar = getAvatar(profile.avatarId);
   return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="game-layout">
     <aside className="decision-panel" aria-label="Your decisions">
-      <div className="profile panel-card"><div className="avatar"><MayaPortrait /></div><div><h2>Maya</h2><p>Age {state.age} <span>•</span> Month {state.month} / 12</p></div></div>
+      <div className="profile panel-card"><div className="avatar"><img src={playerAvatar.preview} alt={`${playerAvatar.name} avatar`} /></div><div><h2>{profile.name}</h2><p>{playerAvatar.name} <span>•</span> Age {state.age} · Month {state.month} / 12</p><small className={`literacy-badge level-${profile.literacyLevel}`}>Level {profile.literacyLevel} · {literacyLevels[profile.literacyLevel - 1].name}</small></div></div>
       <section className="story-card panel-card">
         <div className="step-track" aria-label={`Month ${state.month} of 12`}>{Array.from({length: 12}, (_, i) => <span key={i} className={i + 1 < state.month || completed ? 'done' : i + 1 === state.month ? 'current' : ''} />)}</div>
         <AnimatePresence mode="wait"><motion.div key={`${state.month}-${state.phase}`} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.16 }}>
@@ -109,14 +152,10 @@ export default function App() {
       <nav className="bottom-nav panel-card" aria-label="Game controls"><button aria-label="Replay" disabled={loadingMarket} onClick={replay}><RotateCcw />Replay</button><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
     </aside>
     <section className="world-panel" aria-label="Your financial world"><div className="world-toolbar"><a href="/" className="world-brand"><Sprout size={21} />investly<span>.</span></a><div className="toolbar-actions"><div className="view-tabs" role="tablist" aria-label="World view"><button role="tab" aria-selected={tab === 'town'} onClick={() => setTab('town')} className={tab === 'town' ? 'active' : ''}><House size={15} />Your town</button><button role="tab" aria-selected={tab === 'ledger'} onClick={() => setTab('ledger')} className={tab === 'ledger' ? 'active' : ''}><ReceiptText size={15} />Your ledger</button></div><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
-      <div className="world-view" role="tabpanel" aria-label={tab === 'town' ? 'Your town' : 'Your ledger'}>{tab === 'town' ? <><Suspense fallback={<div className="scene-loading">Building your world…</div>}><Town state={state} reduced={reduced} zoom={1} /></Suspense><div className="world-status"><span className="live-dot" />Month {state.month}<span className="status-divider" />{state.market.source === 'api' ? 'Historical API data' : 'Fictional sample data'}</div></> : <div className="ledger-view"><div className="ledger-heading"><Landmark size={26} /><div><h3>Every dollar has a story.</h3><p>Exact balances after each month and decision.</p></div></div><NetWorthChart state={state} /><div className="ledger-scroll"><table><thead><tr><th>Month / event</th><th>Cash</th><th>Emergency fund</th><th>Investments</th><th>Debt</th><th>Net worth</th></tr></thead><tbody>{state.ledger.map((l, i) => <tr key={i}><th>{monthName(l.month)}<span>{l.label}</span></th><td>{exactMoney(l.cash)}</td><td>{exactMoney(l.emergencySavings)}</td><td>{exactMoney(l.investments)}</td><td>{exactMoney(l.debt)}</td><td>{exactMoney(l.netWorth)}</td></tr>)}</tbody></table></div><p className="fine-print">Total interest: {exactMoney(state.totalInterest)}. Contributed {exactMoney(state.totalContributed)} + market growth {exactMoney(state.totalMarketChange)} − withdrawn {exactMoney(state.totalWithdrawn)} = portfolio {exactMoney(portfolio(state))}.</p><p className="fine-print">{state.market.notice}</p></div>}</div>
+      <div className="world-view" role="tabpanel" aria-label={tab === 'town' ? 'Your town' : 'Your ledger'}>{tab === 'town' ? <><Suspense fallback={<div className="scene-loading">Building your world…</div>}><Town state={state} reduced={reduced} zoom={1} avatarId={profile.avatarId} avatarName={profile.name} /></Suspense><div className="world-status"><span className="live-dot" />Month {state.month}<span className="status-divider" />{state.market.source === 'api' ? 'Historical API data' : 'Fictional sample data'}</div></> : <div className="ledger-view"><div className="ledger-heading"><Landmark size={26} /><div><h3>Every dollar has a story.</h3><p>Exact balances after each month and decision.</p></div></div><NetWorthChart state={state} /><div className="ledger-scroll"><table><thead><tr><th>Month / event</th><th>Cash</th><th>Emergency fund</th><th>Investments</th><th>Debt</th><th>Net worth</th></tr></thead><tbody>{state.ledger.map((l, i) => <tr key={i}><th>{monthName(l.month)}<span>{l.label}</span></th><td>{exactMoney(l.cash)}</td><td>{exactMoney(l.emergencySavings)}</td><td>{exactMoney(l.investments)}</td><td>{exactMoney(l.debt)}</td><td>{exactMoney(l.netWorth)}</td></tr>)}</tbody></table></div><p className="fine-print">Total interest: {exactMoney(state.totalInterest)}. Contributed {exactMoney(state.totalContributed)} + market growth {exactMoney(state.totalMarketChange)} − withdrawn {exactMoney(state.totalWithdrawn)} = portfolio {exactMoney(portfolio(state))}.</p><p className="fine-print">{state.market.notice}</p></div>}</div>
       <div className="world-caption" aria-live="polite"><Info size={16} /><p>{state.explanation}</p></div><span className="fictional-note">Simulated money · {state.market.source === 'api' ? 'Historical market returns' : 'Fictional sample returns'}</span>
     </section>
     {repairNotice && <Modal title="An unexpected expense" onClose={() => setRepairNotice(false)}><div className="repair-popup"><Wrench size={40} /><p>Your car needs a $700 repair.</p><p>Your emergency fund has {money(state.emergencySavings)}. Let’s see how it can help.</p><button className="primary-button" onClick={() => setRepairNotice(false)}>See my options<ArrowRight size={18} /></button></div></Modal>}
     {modal && <Modal title={accountInfo ? `${modal} · Learn More` : modal === 'how' ? 'How Investly works' : modal === 'settings' ? 'Make yourself at home' : 'Two paths. A clearer picture.'} onClose={() => setModal(null)} wide={modal === 'compare'}>{accountInfo ? <><p className="modal-intro">{accountInfo.description}</p><p>This is a simulated account. Real eligibility, contribution limits, and withdrawal rules apply.</p><a href={accountInfo.url} target="_blank" rel="noreferrer">Read the CRA account guide ↗</a></> : modal === 'how' ? <HowItWorks state={state} /> : modal === 'compare' ? <Compare state={state} previous={previous} /> : <div className="settings-list"><button aria-pressed={sound} onClick={() => setSound(!sound)}><Volume2 /><span><b>Game sounds</b><small>Feedback with every choice</small></span><span className={`toggle ${sound ? 'on' : ''}`} /></button><button aria-pressed={quietMotion} onClick={() => setQuietMotion(!quietMotion)}><Sparkles /><span><b>Reduce motion</b><small>Pause idle motion and coin animations</small></span><span className={`toggle ${quietMotion ? 'on' : ''}`} /></button><p className="fine-print">Your system’s reduced-motion preference is always respected.</p></div>}</Modal>}
   </main></MotionConfig>;
-}
-
-function MayaPortrait() {
-  return <svg viewBox="0 0 100 100" role="img" aria-label="Portrait of Maya"><defs><linearGradient id="portrait-bg" x2="0" y2="1"><stop stopColor="#057b79" /><stop offset="1" stopColor="#034b50" /></linearGradient><linearGradient id="hair" x2="1" y2="1"><stop stopColor="#754733" /><stop offset="1" stopColor="#352822" /></linearGradient></defs><circle cx="50" cy="50" r="49" fill="url(#portrait-bg)" /><path d="M22 89 19 51Q17 8 49 8 79 6 81 41L85 93Z" fill="url(#hair)" /><path d="m22 100 4-18 17-9h15l18 10 5 17" fill="#57b7d1" /><path d="m44 67-2 13 9 8 9-9-3-13" fill="#e6a77c" /><path d="m42 79 9 8-8 10-10-15m18 5 9-8 8 5-8 13" fill="#f1f8f1" /><path d="M31 38q0-20 23-19 22 2 21 26l-3 17q-5 16-21 17-16-4-21-21Z" fill="#f3bd92" /><path d="M25 46q3-37 30-34L75 30 51 21 35 45Z" fill="#68402f" /><path d="m30 38 4 35-9 18-4-41m45-22 11 11-1 30-8-6" fill="#4c3026" /><path d="m37 43 10-2m13 0 9 3" fill="none" stroke="#623d2d" strokeWidth="3" strokeLinecap="round" /><ellipse cx="43" cy="50" rx="3" ry="4" fill="#382f2e" /><ellipse cx="64" cy="50" rx="3" ry="4" fill="#382f2e" /><circle cx="44" cy="49" r="1" fill="white" /><circle cx="65" cy="49" r="1" fill="white" /><path d="m54 50-2 9 4 1" fill="none" stroke="#d9916d" strokeWidth="2" strokeLinecap="round" /><path d="M47 65q7 6 14-1" fill="none" stroke="#a65c48" strokeWidth="2.5" strokeLinecap="round" /></svg>;
 }

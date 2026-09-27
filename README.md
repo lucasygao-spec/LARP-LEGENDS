@@ -1,6 +1,6 @@
 # Investly — Your first investing journey
 
-A short financial learning demo following Maya, age 18, through twelve months. Keep the financial decisions on the left and watch the balances change a miniature 3D town on the right.
+A short financial learning demo following your player-created character through twelve months. Keep the financial decisions on the left and watch the balances change a miniature 3D town on the right.
 
 ## Run
 
@@ -12,6 +12,8 @@ npm run dev
 ```
 
 `npm run build` produces `dist`; `npm run preview` serves it. No real accounts or trades are created.
+
+On first launch, enter a name, choose a person character, and select your money experience level. The same selected model appears in the 3D town and the profile portrait. Your choices are saved in this browser.
 
 ## Journey
 
