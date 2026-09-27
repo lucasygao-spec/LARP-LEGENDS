@@ -1,32 +1,96 @@
 import { RoundedBox } from '@react-three/drei';
+import { useMemo } from 'react';
+import { BufferGeometry, Float32BufferAttribute, Color } from 'three';
 
-type Point = [number, number, number];
-function Block({ at, size, color, rotation = [0, 0, 0] }: { at: Point; size: Point; color: string; rotation?: Point }) {
-  return <mesh position={at} rotation={rotation} castShadow receiveShadow><boxGeometry args={size} /><meshStandardMaterial color={color} roughness={0.85} /></mesh>;
+type Walkway = { from: [number, number]; to: [number, number]; width: number };
+
+// The reference campsite is an open clearing; movement stays on the island.
+export function isOnCampGround(x: number, z: number): boolean {
+  return (x / 8.1) ** 2 + (z / 6.6) ** 2 <= 1;
 }
-export function CityBlocks() {
-  return <>
-    <RoundedBox args={[17.4, .35, 14.6]} radius={.12} smoothness={2} position={[0,-.13,0]} receiveShadow castShadow><meshStandardMaterial color="#858f9f" /></RoundedBox>
-    <Block at={[0,.055,0]} size={[17.2,.04,14.4]} color="#535c6e" />
-    {[-5.6,0,5.6].flatMap(x => [-4.8,0,4.8].map(z => <group key={`${x}-${z}`}>
-      <Block at={[x,.115,z]} size={[4.15,.12,3.35]} color="#bcc5d5" />
-      {x === 5.6 && z === 4.8 && <><Block at={[x,.18,z]} size={[3.8,.025,3]} color="#63c694" /><Block at={[x,.2,z]} size={[.65,.025,3]} color="#d0d5db" /><Block at={[x,.2,z]} size={[3.8,.025,.5]} color="#d0d5db" /></>}
-    </group>))}
-    {/* Two continuous cross streets with clear, uncluttered lane markings. */}
-    {[-2.4,2.4].flatMap(z => Array.from({length:22},(_,i) => {const x=-8+i*.76; return Math.abs(Math.abs(x)-2.8)>.85 ? <Block key={`${z}-${i}`} at={[x,.085,z]} size={[.35,.012,.035]} color="#aeb8cc" /> : null; }))}
-    {[-2.8,2.8].flatMap(x => Array.from({length:19},(_,i) => {const z=-6.8+i*.75; return Math.abs(Math.abs(z)-2.4)>.8 ? <Block key={`${x}-${i}`} at={[x,.085,z]} size={[.035,.012,.35]} color="#aeb8cc" /> : null; }))}
-    {[-2.8,2.8].flatMap(x => [-2.4,2.4].map(z => <group key={`${x}-${z}`}>
-      {[-1,1].flatMap(side => Array.from({length:6},(_,i) => <Block key={`${side}-${i}`} at={[x-.5+i*.2,.09,z+side*.68]} size={[.1,.015,.3]} color="#dce1eb" />))}
-    </group>))}
-    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-.34,0]} receiveShadow><planeGeometry args={[200,200]} /><meshStandardMaterial color="#dce4e8" roughness={1} /></mesh>
-  </>;
+
+export function CampIsland({ height }: { height: number }) {
+  const geometry = useMemo(() => {
+    const positions: number[] = [];
+    const colors: number[] = [];
+    const sides = 14;
+    const triangle = (a: number[], b: number[], c: number[], tint: string) => {
+      positions.push(...a, ...b, ...c);
+      const color = new Color(tint);
+      for (let i = 0; i < 3; i++) colors.push(color.r, color.g, color.b);
+    };
+    const rim = (i: number, bottom = false) => {
+      const angle = Math.PI / 2 + i * Math.PI * 2 / sides;
+      const radius = bottom ? 0.83 : 1;
+      return [Math.cos(angle) * 9 * radius, bottom ? height - 3.4 - (i % 3) * 0.2 : height, Math.sin(angle) * 7.3 * radius];
+    };
+    const dirt = ['#72503a', '#60412e', '#805b40', '#68472f'];
+    for (let i = 0; i < sides; i++) {
+      const a = rim(i), b = rim((i + 1) % sides);
+      const c = rim(i, true), d = rim((i + 1) % sides, true);
+      triangle([0, height, 0], b, a, '#65b84c');
+      triangle(a, b, c, dirt[i % dirt.length]);
+      triangle(b, d, c, dirt[(i + 1) % dirt.length]);
+      triangle([0, height - 3.7, 0], c, d, '#60412e');
+    }
+    const result = new BufferGeometry();
+    result.setAttribute('position', new Float32BufferAttribute(positions, 3));
+    result.setAttribute('color', new Float32BufferAttribute(colors, 3));
+    result.computeVertexNormals();
+    return result;
+  }, [height]);
+  return <mesh geometry={geometry} receiveShadow castShadow><meshStandardMaterial vertexColors flatShading roughness={1} /></mesh>;
 }
-export function Tree({ position, size=1, variant=0 }: { position: Point; size?: number; variant?: number }) {
-  return <group position={position} scale={size}><mesh position={[0,.35,0]} castShadow><cylinderGeometry args={[.055,.08,.7,5]} /><meshStandardMaterial color="#9c7e6b" /></mesh><mesh position={[0,.98,0]} scale={[.65,1.35,.65]} castShadow><icosahedronGeometry args={[.48,1]} /><meshStandardMaterial color={['#45b98d','#60c99b','#42aa8a'][variant%3]} flatShading /></mesh></group>;
+
+const cityRoads: Walkway[] = [
+  { from: [-7.5, -5], to: [7.5, -5], width: 1.15 },
+  { from: [-7.5, 5], to: [7.5, 5], width: 1.15 },
+  { from: [-6.2, -6.35], to: [-6.2, 6.35], width: 1.15 },
+  { from: [6.2, -6.35], to: [6.2, 6.35], width: 1.15 },
+  { from: [-2.3, -5], to: [-2.3, -2.3], width: 0.8 },
+  { from: [-2.3, 2.3], to: [-2.3, 5], width: 0.8 },
+  { from: [2.3, -5], to: [2.3, -2.3], width: 0.8 },
+  { from: [2.3, 2.3], to: [2.3, 5], width: 0.8 },
+  { from: [-2.3, -2.3], to: [2.3, -2.3], width: 0.8 },
+  { from: [-2.3, 2.3], to: [2.3, 2.3], width: 0.8 },
+];
+
+export function isOnCityWalkway(x: number, z: number): boolean {
+  return cityRoads.some(({ from, to, width }) => {
+    if (Math.abs(from[1] - to[1]) < 0.001) {
+      return Math.abs(z - from[1]) <= width / 2
+        && x >= Math.min(from[0], to[0]) - width / 2
+        && x <= Math.max(from[0], to[0]) + width / 2;
+    }
+    return Math.abs(x - from[0]) <= width / 2
+      && z >= Math.min(from[1], to[1]) - width / 2
+      && z <= Math.max(from[1], to[1]) + width / 2;
+  });
 }
-export function StreetLife() {
-  return <>
-    {[[-4.2,1.6],[4.2,1.6],[-1.5,-3.3],[7,3.4]].map(([x,z],i)=><group key={i} position={[x,.18,z]}><mesh position={[0,.7,0]} castShadow><cylinderGeometry args={[.025,.045,1.4,6]} /><meshStandardMaterial color="#8190a4" /></mesh><Block at={[.12,1.4,0]} size={[.3,.055,.08]} color="#9faabc" /><Block at={[.23,1.36,0]} size={[.18,.035,.12]} color="#fff4d3" /></group>)}
-    {[[-5,.12,2.65],[2.55,.12,-.7]].map((p,i)=><group key={i} position={p as Point} rotation={[0,i===0?Math.PI/2:0,0]}><RoundedBox args={[.48,.24,.9]} radius={.055} position={[0,.2,0]} castShadow><meshStandardMaterial color={i===0?'#e6bd73':'#80a8c9'} /></RoundedBox><Block at={[0,.39,-.04]} size={[.41,.2,.46]} color="#b7d9ed" /><Block at={[0,.5,-.04]} size={[.43,.035,.47]} color={i===0?'#e8cb98':'#81aacb'} />{[-.25,.25].flatMap(x=>[-.27,.27].map(z=><mesh key={`${x}${z}`} position={[x,.13,z]} rotation={[0,0,Math.PI/2]}><cylinderGeometry args={[.11,.11,.075,8]} /><meshStandardMaterial color="#374151" /></mesh>))}</group>)}
-  </>;
+
+export function CityStreets({ height }: { height: number }) {
+  return <group>
+    <RoundedBox args={[17.6, 0.42, 14.8]} radius={0.22} smoothness={3} position={[0, height - 0.22, 0]} receiveShadow castShadow>
+      <meshStandardMaterial color="#47a958" roughness={1} />
+    </RoundedBox>
+    {cityRoads.map(({ from, to, width }, index) => {
+      const horizontal = Math.abs(from[1] - to[1]) < 0.001;
+      const length = Math.hypot(to[0] - from[0], to[1] - from[1]);
+      const x = (from[0] + to[0]) / 2;
+      const z = (from[1] + to[1]) / 2;
+      return <group key={index}>
+        <RoundedBox args={horizontal ? [length, 0.045, width] : [width, 0.045, length]} radius={0.08} smoothness={2}
+          position={[x, height + 0.025, z]} receiveShadow>
+          <meshStandardMaterial color="#596777" roughness={0.95} />
+        </RoundedBox>
+        {index < 4 && Array.from({ length: Math.ceil(length / 0.9) }, (_, dash) => {
+          const offset = -length / 2 + 0.45 + dash * 0.9;
+          if (offset > length / 2 - 0.3) return null;
+          return <mesh key={dash} position={horizontal ? [x + offset, height + 0.052, z] : [x, height + 0.052, z + offset]}>
+            <boxGeometry args={horizontal ? [0.42, 0.016, 0.055] : [0.055, 0.016, 0.42]} /><meshBasicMaterial color="#f5e7a9" />
+          </mesh>;
+        })}
+      </group>;
+    })}
+  </group>;
 }

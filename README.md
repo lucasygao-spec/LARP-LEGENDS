@@ -18,36 +18,36 @@ npm run dev
 1. **Uni or Start working.** The work path lands a BizTech mascot job, salary $30,000/year.
 2. **Emergency cushion.** Set aside $200 from pay, or keep it in cash.
 3. **Frat flu alert.** A centered panel over a full-screen backdrop presents a $200 medical bill uses the emergency fund or a gift from Mom. Trying an empty fund opens the call-Mom alternative without advancing time.
-4. **Birthday.** Receive $1,000: open TFSA/RRSP/FHSA, buy fictional BizTech, or put it in general savings.
+4. **Birthday.** Receive $1,000: open TFSA/RRSP/FHSA, buy BizTech, or put it in general savings.
 5. **Raise.** An extra $250/month leads directly to managed app, advisor, brokerage, or one ETF. Open an account if needed, then choose VAB/XUS/QQQ with Learn More buttons.
-6. **Market result.** See a gain or loss, then choose a Miami penthouse goal, higher-risk QQQ, or lower-risk VAB. View the final result, replay, and compare. The summary preserves the Month 6 balances.
+6. **Market result.** See a gain or loss, then choose a Miami penthouse goal, higher-risk QQQ, or lower-risk VAB. The Miami path shows your available cash, general savings, and investments against a $1,000,000 price, then offers a one-day penthouse rental priced at your available cash to film a course or “Keep grinding.” Both go straight to a Month 6 summary; renting spends the cash balance, while grinding preserves balances. Replay and compare.
 
 The screenshot’s checkmarks/strikethroughs are interpreted as a sample route, not removed choices. A 10% raise on $30,000/year is $3,000/year or $250/month; the screenshot’s “$250 each year” is corrected to monthly. University stays playable with simplified part-time income. Investment methods converge to keep the pitch short.
 
-Avatar, name, and literacy-level onboarding remain. Choice buttons apply immediately; feedback screens retain Continue. Number keys 1–4 also choose immediately. The medical alert stays open through payment or the call-Mom alternative. Each main event is one month; account/method/fund choices are substeps in that month. Use mouse, Tab/Enter, or keys 1–4. Financial feedback is in the dashboard; the city has no floating building labels. Reduced motion, optional sounds, no-WebGL fallback, and unavailable storage are supported.
+Avatar, name, and literacy-level onboarding remain. Settings → Change name or avatar lets players edit their profile without resetting their finances or story. Saved profiles persist when browser storage is available. The town view has no ledger tab or floating month/data badge. Choice buttons apply the decision and advance to the next story step immediately. A before/after summary stays in the sidebar beside the next choices, with no Apply or Continue button. Changed accounts use darker square backgrounds. Number keys 1–4 choose as well. The medical alert uses a red full-screen panel and stays open until the player selects payment or the call-Mom alternative. Each main event is one month; account/method/fund choices are substeps in that month. Use mouse, Tab/Enter, or keys 1–4. Financial feedback is in the dashboard; the city has no floating building labels. Reduced motion, optional sounds, no-WebGL fallback, and unavailable storage are supported.
 
 ## Financial assumptions
 
 `src/engine.ts` is the only balance-calculation engine. `src/data/story.json` defines the pitch; `src/investments.ts` defines fund descriptions and official issuer links.
 
 - Start: age 18, $1,000 cash, all other balances $0.
-- Work leaves $400/month after simplified taxes/essentials. Uni incurs $5,000 tuition debt and leaves $100/month from part-time work. The raise adds $250/month beginning Month 5; the university raise is a fictional equal-cash assumption.
+- Work leaves $400/month after simplified taxes/essentials. Uni incurs $5,000 tuition debt and leaves $100/month from part-time work. The raise adds $250/month beginning Month 5; the university raise is a simplified equal-cash assumption.
 - The optional $200 emergency deposit transfers cash. Mom’s $200 gift goes to the emergency fund and immediately pays the $200 medical bill. No family debt is created.
 - General savings and emergency savings are separate. Neither earns interest. Birthday money arrives once in Month 4. Opening an account reserves that $1,000 in cash; investing the raise uses $1,250. If the gift was already saved or invested, the first ETF purchase is $250.
 - Monthly market movement applies before new recurring contributions. Rebalancing existing investments does not inflate contributed capital. All figures round to cents.
-- VAB, XUS, and QQQ are real examples; BizTech is fictional. The pitch’s 2–4%, 7–11%, and 18% annual figures appear in Learn More as illustrations, not verified historical CAGR, expected returns, or the values driving the simulation. Simplified relative-risk categories are not issuer risk ratings. All funds can fall.
+- VAB, XUS, and QQQ are real examples; BizTech is simulated. The pitch’s 2–4%, 7–11%, and 18% annual figures appear in Learn More as illustrations, not verified historical CAGR, expected returns, or the values driving the simulation. Simplified relative-risk categories are not issuer risk ratings. All funds can fall.
 - All four investment methods use the same ETF picker and calculation. Provider services/fees, taxes, distributions, FX, account eligibility, contribution limits, and withdrawal restrictions are not simulated. QQQ’s U.S. listing is represented in simulated dollars; currency conversion is omitted.
-- The Miami option sets a fictional $1,000,000 goal, sells investments into general savings, and redirects an investing raise plan to savings. No penthouse is purchased. Goal progress counts general savings.
-- Student debt uses a fictional 6% APR ÷ 12.
+- The Miami option sets a $1,000,000 goal and shows the exact shortfall. Goal progress counts cash + general savings + investments, excluding emergency savings; debt is shown separately. It does not sell investments or buy property. The one-day rental costs the player’s cash balance at that step ($3,400 on the sample QQQ path) and spends it in full to film a course with $0 initial revenue. Savings and investments stay untouched. Zero cash disables renting. “Keep grinding” preserves the portfolio and recurring plan. After the shortfall notification, See my options opens the penthouse choices in a full-screen panel. Both endings complete in the same month; the rental expense applies immediately, and the final summary opens full-screen. Replay, compare, or return to the dashboard from the final panel.
+- Student debt uses a 6% APR ÷ 12.
 - Net worth = cash + general savings + emergency fund + portfolio − student debt.
 - Ledger identity: net worth = $1,000 + income − spending − interest + market growth.
 - Portfolio identity: contributions + market growth − withdrawals = portfolio value.
 
-Storage uses `investly.previous-run.v4`; older story results are not compared to the new script. Avatar profiles retain their existing storage key.
+Storage uses `investly.previous-run.v6`; older story results are not compared to the new script. Avatar profiles retain their existing storage key.
 
 ## Market data
 
-No provider is configured in this repository. Default returns are clearly labelled **fictional sample data** and include gains and losses. `src/market.ts` can load a normalized historical ETF feed using `VITE_MARKET_DATA_URL` in `.env.local` (restart Vite). Never place secret provider credentials in browser environment variables; use a server-side proxy if credentials are needed.
+No provider is configured in this repository. Default returns are clearly labelled **sample data** and include gains and losses. `src/market.ts` can load a normalized historical ETF feed using `VITE_MARKET_DATA_URL` in `.env.local` (restart Vite). Never place secret provider credentials in browser environment variables; use a server-side proxy if credentials are needed.
 
 The endpoint must return twelve ordered monthly rows, each containing decimal returns for each real fund:
 
@@ -62,7 +62,7 @@ The endpoint must return twelve ordered monthly rows, each containing decimal re
 }
 ```
 
-The abbreviated example needs all twelve rows to validate; this pitch uses months 1–6. `0.02` means +2%. An old generic `etf`/`stocks` response is rejected instead of being falsely attributed to named funds. BizTech always uses the fictional local sequence, including in API mode. Requests time out after eight seconds; invalid/unavailable data visibly falls back to sample mode. Data is frozen for each run and replay. The adapter replays historical data, not forecasts.
+The abbreviated example needs all twelve rows to validate; this pitch uses months 1–6. `0.02` means +2%. An old generic `etf`/`stocks` response is rejected instead of being falsely attributed to named funds. BizTech always uses the sample local sequence, including in API mode. Requests time out after eight seconds; invalid/unavailable data visibly falls back to sample mode. Data is frozen for each run and replay. The adapter replays historical data, not forecasts.
 
 ## Verification and media
 
@@ -72,7 +72,7 @@ npm run build
 npm run test:e2e
 ```
 
-Engine tests reconcile every substantive branch and cover accounts, all four methods, named funds, general/emergency savings, market downturns, goal transfers, student interest, deterministic replay, and API fallback. Browser tests cover avatar onboarding, the full pitch with the real city, direct choice buttons, keyboard controls, centered full-screen medical alerts, Learn More, mobile, replay, storage, and no-WebGL play.
+Engine tests reconcile every substantive branch and cover accounts, all four methods, named funds, general/emergency savings, market downturns, penthouse shortfalls, rental expenses, student interest, deterministic replay, and API fallback. Browser tests cover avatar onboarding, the full pitch with the real city, direct choice buttons, keyboard controls, centered full-screen medical alerts, Learn More, mobile, replay, storage, and no-WebGL play.
 
 Current screenshots use `artifacts/pitch-*.png`. `docs/DEMO.md` and `scripts/record-demo.mjs` describe recording the new pitch. Existing `investly-demo.webm` and `life-ledger-*` videos depict earlier scripts; do not use them as recordings of this pitch. `docs/DEVPOST.md` contains updated submission copy.
 

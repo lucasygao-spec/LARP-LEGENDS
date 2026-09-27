@@ -9,10 +9,12 @@ Suggested narration:
 - Receive $1,000 for your birthday and open a TFSA.
 - Invest the $250 monthly raise plus the gift. Choose one ETF and explore QQQ.
 - See the market change, then choose a Miami goal or a different level of risk.
-- End at Month 6 with the resulting balances. Replay or compare paths.
+- Choose the Miami goal. Show the actual funds available and the remaining shortfall.
+- Open the full-screen penthouse options and rent for a one-day course shoot using the available cash, with $0 initial course revenue, or keep grinding with the same investments.
+- End immediately at Month 6 with the financial summary. Replay or compare paths.
 
-Choice buttons act immediately; Continue advances after feedback. The raise leads directly to the investing-method choices.
+Choices apply immediately and advance the story. Financial updates stay in the sidebar with darker square highlights on changed accounts, and no separate Continue button. The medical alert uses a red full-screen panel. The final financial summary opens full-screen automatically. The raise leads directly to the investing-method choices.
 
-The record path is an example, not a recommendation. The default feed is fictional sample data. ETF risk categories, annual-return illustrations, and student-loan interest are demo assumptions. Do not describe the capture as real account activity or live market performance.
+The record path is an example, not a recommendation. The default feed is sample data. ETF risk categories, annual-return illustrations, and student-loan interest are demo assumptions. Do not describe the capture as real account activity or live market performance.
 
 Current screenshots use `pitch-*`. Existing `investly-demo.webm` and `life-ledger-*` media depict earlier scripts. Review a newly generated video before uploading it. Publishing and Devpost submission remain manual account actions.
