@@ -1,1 +1,14 @@
-{"8":{"technology":0.08,"energy":0.03,"retail":0.02},"10":{"technology":-0.35,"energy":-0.08,"retail":-0.12},"12":{"technology":0.06,"energy":0.02,"retail":0.01}}
+[
+  {"month":1,"etf":0,"stocks":0},
+  {"month":2,"etf":0.012,"stocks":0.03},
+  {"month":3,"etf":-0.008,"stocks":-0.025},
+  {"month":4,"etf":0.021,"stocks":0.06},
+  {"month":5,"etf":-0.045,"stocks":-0.16},
+  {"month":6,"etf":0.015,"stocks":0.04},
+  {"month":7,"etf":0.008,"stocks":-0.02},
+  {"month":8,"etf":-0.023,"stocks":-0.08},
+  {"month":9,"etf":0.031,"stocks":0.075},
+  {"month":10,"etf":-0.012,"stocks":-0.04},
+  {"month":11,"etf":0.018,"stocks":0.035},
+  {"month":12,"etf":0.009,"stocks":-0.01}
+]

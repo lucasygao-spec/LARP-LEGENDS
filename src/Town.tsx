@@ -5,7 +5,7 @@ import { Html, Line, RoundedBox, useGLTF } from '@react-three/drei';
 import { Box3, Group, MathUtils, Mesh, Vector3 } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Effect, GameState, Sector } from './engine';
-import { money, portfolio } from './engine';
+import { GOALS, goalProgress, money, portfolio, townSectors } from './engine';
 import { BankBuilding, Construction, HomeVilla, Island, SkyCloud, StreetLife, Tree } from './TownScenery';
 import { Building2, CreditCard, Flag, Landmark, ShieldCheck, UserRound, Zap } from 'lucide-react';
 
@@ -45,7 +45,7 @@ function SectorBuilding({ sector, value, reduced, showLabel }: { sector: Sector;
   const target = 0.82 + Math.min(value / 900, 1.2) * 0.28;
   useFrame((_, delta) => { if (group.current) group.current.scale.y = reduced ? target : MathUtils.damp(group.current.scale.y, target, 4, delta); });
   const p = spots[sector];
-  return <group><Plot position={p} tint={sector === 'technology' ? '#d8d4e2' : sector === 'energy' ? '#dfe0ba' : '#e4d5c2'} /><group ref={group} position={p}><Model name={sector === 'energy' ? 'factory' : sector} size={size} rotation={Math.PI / 2} />{sector === 'energy' && <Model name="solar" size={1.15} position={[0.4, 0, 1.2]} />}</group>{showLabel && <Label position={[p[0], p[1] + size + 0.45, p[2]]} title={sector === 'technology' ? 'Technology' : sector === 'energy' ? 'Energy' : 'Retail'} value={money(value)} tone={sector} />}</group>;
+  return <group><Plot position={p} tint={sector === 'technology' ? '#d8d4e2' : sector === 'energy' ? '#dfe0ba' : '#e4d5c2'} /><group ref={group} position={p}><Model name={sector === 'energy' ? 'factory' : sector} size={size} rotation={Math.PI / 2} />{sector === 'energy' && <Model name="solar" size={1.15} position={[0.4, 0, 1.2]} />}</group>{showLabel && <Label position={[p[0], p[1] + size + 0.45, p[2]]} title={sector === 'technology' ? 'ETF + stock' : 'ETF district'} value={money(value)} tone={sector} />}</group>;
 }
 function Turbine({ reduced }: { reduced: boolean }) {
   const rotor = useRef<Group>(null);
@@ -91,7 +91,7 @@ function Effects({ effects, reduced }: { effects: Effect[]; reduced: boolean }) 
 function Storm({ state, reduced }: { state: GameState; reduced: boolean }) {
   const group = useRef<Group>(null); const start = useRef<number | null>(null);
   useFrame(({ clock }) => { start.current ??= clock.elapsedTime; if (group.current) group.current.visible = clock.elapsedTime - start.current < (reduced ? 0 : 6); });
-  return <group ref={group}>{(['technology', 'energy', 'retail'] as Sector[]).filter(s => state.investmentsBySector[s] > 0).map(sector => <group key={sector} position={[spots[sector][0], sector === 'technology' ? 3.8 : 2.9, spots[sector][2]]}>{[-0.45, 0, 0.45].map((x, i) => <mesh key={x} position={[x, i % 2 * 0.17, 0]} scale={[0.7, 0.35, 0.45]}><sphereGeometry args={[0.6, 8, 6]} /><meshStandardMaterial color="#9daabb" /></mesh>)}<Line points={[[0, -0.25, 0], [-0.15, -0.6, 0], [0.12, -0.55, 0], [-0.1, -0.95, 0]]} color="#ffd776" lineWidth={3} /></group>)}</group>;
+  return <group ref={group}>{(['technology', 'energy', 'retail'] as Sector[]).filter(s => townSectors(state)[s] > 0).map(sector => <group key={sector} position={[spots[sector][0], sector === 'technology' ? 3.8 : 2.9, spots[sector][2]]}>{[-0.45, 0, 0.45].map((x, i) => <mesh key={x} position={[x, i % 2 * 0.17, 0]} scale={[0.7, 0.35, 0.45]}><sphereGeometry args={[0.6, 8, 6]} /><meshStandardMaterial color="#9daabb" /></mesh>)}<Line points={[[0, -0.25, 0], [-0.15, -0.6, 0], [0.12, -0.55, 0], [-0.1, -0.95, 0]]} color="#ffd776" lineWidth={3} /></group>)}</group>;
 }
 function CameraMotion({ trigger, reduced, zoom }: { trigger: string; reduced: boolean; zoom: number }) {
   const { camera, size } = useThree(); const time = useRef(0);
@@ -122,17 +122,17 @@ function World({ state, reduced, zoom, onReady }: { state: GameState; reduced: b
     <Plot position={spots.home} tint="#9bce57" width={3.9} depth={4.25} /><HomeVilla position={spots.home} /><Shield amount={state.emergencySavings} reduced={reduced} />
     <Label position={[1, 5.05, -.8]} title="Emergency Fund" value={state.emergencySavings ? `${money(state.emergencySavings)} protected · Your home` : 'Your home · Build your protection'} tone="savings" />
     <Plot position={spots.bank} tint="#cbd89e" width={3.1} depth={3.4} /><BankBuilding position={spots.bank} /><Label position={[-4.25, 4.4, -2.9]} title="Bank" value={money(state.cash)} tone="cash" />
-    {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <SectorBuilding key={sector} sector={sector} value={state.investmentsBySector[sector]} reduced={reduced} showLabel={state.step >= 3} />)}
-    <Plot position={spots.goal} tint="#cbb989" width={3.5} depth={2.9} /><Construction position={spots.goal} progress={state.goalSavings / 1500} />
-    <Label position={[2.6, 3.3, 4.2]} title="Goal" value={`Tuition · ${Math.round(state.goalSavings / 1500 * 100)}% funded`} tone="goal" />
+    {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <SectorBuilding key={sector} sector={sector} value={townSectors(state)[sector]} reduced={reduced} showLabel={state.month >= 3} />)}
+    <Plot position={spots.goal} tint="#cbb989" width={3.5} depth={2.9} /><Construction position={spots.goal} progress={goalProgress(state)} />
+    <Label position={[2.6, 3.3, 4.2]} title="Goal" value={state.goal ? `${GOALS[state.goal].name} · ${Math.round(goalProgress(state) * 100)}% funded` : 'Not selected'} tone="goal" />
     <Maya reduced={reduced} /><Turbine reduced={reduced} /><StreetLife />
-    {state.creditCardDebt > 0 && <><Line points={[[1, .6, -.8], [3.8, .8, -.1], [6.35, 1.6, 1.3]]} color="#ff596c" lineWidth={9} transparent opacity={.7} /><Line points={[[1, .6, -.8], [3.8, .8, -.1], [6.35, 1.6, 1.3]]} color="#ffd6ad" lineWidth={2} /><group position={spots.debt}><mesh position={[0, .35, 0]} castShadow><boxGeometry args={[.65,.7,.7]} /><meshStandardMaterial color="#e75b64" /></mesh></group></>}
-    <Label position={[6.35, 2.7, 1.3]} title="Credit Card Debt" value={state.creditCardDebt ? `Debt drain · ${money(state.creditCardDebt)}` : '$0 · No balance'} tone="debt" />
+    {state.debt > 0 && <><Line points={[[1, .6, -.8], [3.8, .8, -.1], [6.35, 1.6, 1.3]]} color="#ff596c" lineWidth={9} transparent opacity={.7} /><Line points={[[1, .6, -.8], [3.8, .8, -.1], [6.35, 1.6, 1.3]]} color="#ffd6ad" lineWidth={2} /><group position={spots.debt}><mesh position={[0, .35, 0]} castShadow><boxGeometry args={[.65,.7,.7]} /><meshStandardMaterial color="#e75b64" /></mesh></group></>}
+    <Label position={[6.35, 2.7, 1.3]} title="Debt" value={state.debt ? `Debt drain · ${money(state.debt)}` : '$0 · No balance'} tone="debt" />
     {trees.map(([x,z],i)=><Tree key={i} position={[x,.16,z]} size={.75+(i%4)*.15} pine={i%3===0} variant={i} />)}
     {[[-5.9,3], [5.7,4.8], [2.5,-5.6],[-6.2,-1],[6.6,0]].map(([x,z],i)=><Model key={i} name="rock" size={.25+i%2*.1} position={[x,.15,z]} />)}
     <SkyCloud position={[-6.5, 6, -4.5]} scale={1.05} reduced={reduced} /><SkyCloud position={[5.5, 7.8, -5]} scale={1.45} reduced={reduced} />
     <Effects key={trigger} effects={state.effects} reduced={reduced} />
-    {state.month === 10 && <Storm key={trigger} state={state} reduced={reduced} />}
+    {state.monthlyGrowth < 0 && <Storm key={trigger} state={state} reduced={reduced} />}
   </>;
 }
 class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
@@ -141,12 +141,12 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 function TextTown({ state }: { state: GameState }) {
-  return <div className="text-town"><span className="eyebrow">Your town, in words</span><h3>Every choice still counts.</h3><p>The 3D view is unavailable. Your full game and financial results are ready to play.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(state.creditCardDebt)}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Tuition building <b>{Math.round(state.goalSavings / 1500 * 100)}%</b></span></div></div>;
+  return <div className="text-town"><span className="eyebrow">Your town, in words</span><h3>Every choice still counts.</h3><p>The 3D view is unavailable. Your full game and financial results are ready to play.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(state.debt)}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
 }
 export default function Town({ state, reduced, zoom }: { state: GameState; reduced: boolean; zoom: number }) {
   const [ready, setReady] = useState(false);
   const [available] = useState(() => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } });
   const fallback = <TextTown state={state} />;
   if (!available) return fallback;
-  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [13, 12, 17], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} aria-label="A miniature town showing your bank, home shield, debt drain, investment sectors, and tuition goal"><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Growing your little town…</div>}</SceneBoundary>;
+  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [13, 12, 17], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} aria-label="A miniature town showing your bank, home shield, debt drain, investment sectors, and financial goal"><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Growing your little town…</div>}</SceneBoundary>;
 }

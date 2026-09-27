@@ -1,21 +1,16 @@
-# One-minute demo
+# One-minute Investly demo
 
-Record the real app at a desktop viewport, with the decisions and town visible. Keep sounds muted for narration. The automated recording follows the same choices through the interface; it does not inject financial state.
+Run `npm run dev`, then `npm run demo` in another terminal. The script uses installed Chrome and records the current app. It requires the Playwright ffmpeg cache to fit the full capture into one minute; if unavailable, it preserves the untrimmed capture and reports that fact. The recorder saves `artifacts/investly-demo.webm`.
 
-| Time | Action | Caption / narration |
-| --- | --- | --- |
-| 0–5s | Introduce Maya and the first decision | “Meet Maya. She's 19, and money choices are hard to picture.” |
-| 5–12s | Save $400 | “In Life Ledger, an emergency fund becomes a shield around your home.” |
-| 12–18s | Put the laptop on credit, continue | “Credit keeps cash available, but interest starts draining future income.” |
-| 18–25s | Use savings and credit for the repair | “Then life happens. The shield absorbs $400 of a $900 repair.” |
-| 25–33s | Invest in technology, continue to October | “Put everything in one sector, and one storm can hit hard.” |
-| 33–39s | Remain invested, finish, replay | “What if Maya made one different choice?” |
-| 39–50s | Replay the same first three choices; diversify | “Spread the same $900 across three sectors. Watch the districts respond differently.” |
-| 50–56s | Finish, compare paths | “Same year. Same market. Two different outcomes.” |
-| 56–60s | Hold the comparison | “Life Ledger makes the consequences of money decisions visible.” |
+Suggested narration:
 
-The video is a captioned screen recording, not narrated audio. Add the narration above if desired. The demonstration's partial December rebound is explicitly fictional; it is not a promise that waiting recovers investment losses.
+- 0–8s: “Meet Maya, 18. Choose a starting path and see what money is available.” Choose Work.
+- 8–17s: “A birthday gift starts an investing journey. Choose an account, then an investment.” Open TFSA and buy the diversified ETF.
+- 17–27s: “Markets move both ways. An emergency fund protects money you can leave invested.” Save the extra $500 and show the shield.
+- 27–36s: “A $700 repair uses $500 of savings and $200 cash. Investments stay untouched.” Cover the repair.
+- 36–47s: “A raise becomes a habit: $100 a month into an ETF.” Set recurring investing; move through the future months.
+- 47–60s: “Contributions and market growth are shown separately. Choose a goal and see your progress.” Select First Home and show the tracker.
 
-To recreate the recording on this Mac: install Google Chrome and run `npx playwright install ffmpeg`. Keep `npm run dev` running on port 5173, then run `npm run demo` in another terminal. The script captures the real app and writes the video into `artifacts/`.
+The default recording visibly uses fictional sample returns. Do not describe it as live data. API mode uses historical returns replayed over a simulated year. No real account is opened.
 
-Upload the video to your chosen host and paste its URL into Devpost. Publishing and prize opt-in require your hackathon account.
+Use the current `investly-*` screenshots; old `life-ledger-*` media depicts the previous product. Review any recording before uploading it. Publishing, Devpost opt-in, and submitting the video remain manual account actions.

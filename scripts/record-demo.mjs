@@ -19,40 +19,45 @@ const started = Date.now();
 const caption = text => page.evaluate(text => { document.getElementById('demo-caption').textContent = text; }, text);
 const at = async seconds => { const remaining = started + seconds * 1000 - Date.now(); if (remaining > 0) await page.waitForTimeout(remaining); };
 const pick = async name => { await page.getByRole('button', { name: new RegExp(name) }).click(); await page.getByRole('button', { name: 'Make this choice' }).click(); };
-const next = () => page.getByRole('button', { name: /Continue to|See my year in review/ }).click();
+const next = async () => {
+  await page.getByRole('button', { name: /Continue to Month|Choose my financial goal/ }).click();
+  if (await page.getByRole('dialog', { name: 'An unexpected expense' }).count()) await page.getByRole('button', { name: 'See my options' }).click();
+};
 const decision = async name => { await pick(name); await next(); };
 
-await caption('Meet Maya. She’s 19, and money choices are hard to picture.');
-await at(4); await pick('Give future you');
-await caption('An emergency fund becomes a shield around your home.');
-await at(10); await page.screenshot({ path: 'artifacts/life-ledger-shield.png', fullPage: true }); await next();
-await pick('Put it on the card'); await caption('Credit keeps cash available. Interest drains future income.');
-await at(16); await next(); await pick('A little savings, a little credit');
-await caption('A $900 repair. Your shield absorbs $400 of the cost.');
-await at(22); await next(); await pick('Back one big idea');
-await caption('Invest $900 in one sector. Watch the money find its way.');
-await at(28); await next(); await caption('Technology falls 35%. One storm hits a concentrated portfolio hard.');
-await at(33); await decision('Give your plan more time');
-await page.getByRole('button', { name: 'Try a different story' }).click();
-await caption('Replay the same year. Change just one investment decision.');
-await decision('Give future you'); await decision('Put it on the card'); await decision('A little savings, a little credit');
-await pick('Give your money three homes');
-await caption('Three streams. Three sectors. The same $900, spread out.');
-await at(46); await next();
-await caption('All three sectors fall, but the diversified portfolio falls less in this scenario.');
-await at(50); await decision('Give your plan more time');
-await page.getByRole('button', { name: 'Compare your paths' }).click();
-await caption('Same year. Same market. Two different outcomes.');
-await at(55);
-// Native dialogs render in the top layer; place the recording caption inside it for the closing shot.
-await page.evaluate(() => { const el = document.getElementById('demo-caption'); const dialog = document.querySelector('dialog'); if (dialog && el) { el.style.position = 'static'; el.style.transform = 'none'; el.style.width = '100%'; el.style.maxWidth = 'none'; el.style.marginTop = '20px'; dialog.appendChild(el); } });
-await caption('Life Ledger makes the consequences of money decisions visible.');
+await caption('Meet Maya, 18. Start with $1,000 and choose your path.');
+await at(5); await decision('Start Working');
+await caption('A birthday gift. An account. Your first investing decision.');
+await pick('Start Investing');
+await page.getByRole('button', { name: 'TFSA', exact: true }).click();
+await page.getByRole('button', { name: 'Open this account' }).click();
+await next(); await at(15); await decision('Buy a diversified ETF');
+await caption('A diversified ETF spreads exposure. Sample markets move both ways.');
+await at(22); await pick('Build an emergency fund');
+await caption('Saving $500 builds a shield around your home.');
+await page.screenshot({ path: 'artifacts/investly-shield.png', fullPage: true });
+await at(28); await next(); await pick('Cover the repair');
+await caption('A $700 repair: $500 savings + $200 cash. Investments stay untouched.');
+await at(35); await next(); await pick('Automatically invest');
+await caption('Recurring investment created: $100 a month into an ETF.');
+await next();
+for (let month = 7; month <= 12; month++) await decision('Keep my plan going');
+await page.getByRole('button', { name: 'First Home', exact: true }).click();
+await page.getByRole('button', { name: 'Set my goal' }).click();
+await page.getByRole('heading', { name: 'Your future has a starting point.' }).waitFor();
+await page.locator('.savings-goal').scrollIntoViewIfNeeded();
+await caption('Your contributions, market growth, and progress toward a first home.');
+await at(56); await caption('Investly makes your first investing journey visible.');
 await at(61);
+await page.waitForTimeout(5000); // Let the final goal and caption reach recorded frames.
 const video = page.video(); await context.close(); await browser.close();
 const source = await video.path();
 const encoder = path.join(homedir(), 'Library/Caches/ms-playwright/ffmpeg-1011/ffmpeg-mac');
-const output = 'artifacts/life-ledger-demo.webm';
-// Trim the initial load and guarantee a one-minute deliverable.
-const result = spawnSync(encoder, ['-y', '-sseof', '-60', '-i', source, '-t', '60', '-c:v', 'libvpx', '-deadline', 'realtime', '-cpu-used', '8', '-threads', '4', '-b:v', '2200k', output], { encoding: 'utf8' });
+const output = 'artifacts/investly-demo.webm';
+// Preserve the entire journey, including the final goal, within one minute.
+const probe = spawnSync(encoder, ['-i', source], { encoding: 'utf8' });
+const duration = probe.stderr?.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
+const seconds = duration ? Number(duration[1]) * 3600 + Number(duration[2]) * 60 + Number(duration[3]) : 0;
+const result = seconds > 0 ? spawnSync(encoder, ['-y', '-itsscale', String(60 / seconds), '-i', source, '-t', '60', '-c:v', 'libvpx', '-deadline', 'realtime', '-cpu-used', '8', '-threads', '4', '-b:v', '2200k', output], { encoding: 'utf8' }) : { status: 1, stderr: 'Could not read capture duration.' };
 if (result.status !== 0) { await rename(source, output); console.warn('Saved untrimmed capture; encoder output:', result.stderr); }
 console.log(`Recorded ${output}`);

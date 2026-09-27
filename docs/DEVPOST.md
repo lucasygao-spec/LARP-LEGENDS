@@ -1,45 +1,31 @@
-# Life Ledger
+# Investly — Your first investing journey
 
 ## Tagline
 
-Small choices. Real growth. A financial life game that makes the consequences visible.
-
-## Inspiration
-
-Your first paycheque, a surprise repair, a credit balance that quietly grows: early money decisions are hard to picture. We wanted to turn abstract balances into a place you can understand at a glance.
+Start at 18. Build a habit. See your money decisions come to life.
 
 ## What it does
 
-Life Ledger is a 3–5 minute game following Maya, a 19-year-old student with a part-time job, through a fictional year. Players make five decisions on the left and see the consequences in a living 3D town on the right.
+Follow Maya through a simple year of financial firsts: choose university, work, or a gap year; receive a birthday gift; open a simulated TFSA, FHSA, or RRSP; and make a first ETF or stock investment.
 
-Saving builds a shield around Maya's home. Interest pulls coins toward a red debt drain. Investing sends money to sector buildings that grow or shrink with fixed fictional market events. A separate tuition fund builds the foundation for a near-term goal. Replay the year and compare two paths side by side.
+An extra $500 tests the balance between investing, savings, and debt. A $700 car repair shows why emergency savings matter. A raise creates a recurring monthly plan, and the portfolio then progresses through six months of changing markets. Finish by choosing a First Home, Car, or Puppy goal and see how far your investments have taken you.
 
-Every animation is paired with a plain-language explanation. The full game works without 3D, supports keyboard input and reduced motion, and requires no account.
+The persistent dashboard shows age, month, cash, investments, debt, emergency fund, account, and goal. In the 3D town, savings protect a home, coins travel into investments, market losses bring a storm, and debt drains money. Each decision includes a short explanation and one financial lesson. Replay and compare with the previous completed year.
 
 ## How we built it
 
-React and TypeScript render the story and dashboard. React Three Fiber and Three.js bring a miniature Kenney town to life. Motion animates interface transitions and a state-driven net-worth chart. A pure calculation engine handles money; local JSON defines the story and market sequence. Browser storage keeps the last completed run.
+React and TypeScript drive the story and dashboard. React Three Fiber, Three.js, and selected Kenney assets render the town. Motion animates balances, transitions, and an interactive net-worth chart. A pure financial engine controls all money; the scene only displays results. Tests reconcile every valid story branch to the cent.
 
-We test every valid story path against an accounting identity so every balance reconciles to the cent. We also test the real browser flow, including replay, comparison, mobile layout, and unavailable WebGL/storage.
+The market adapter accepts validated monthly historical returns from a configurable API. **No existing market endpoint or credentials were present in this checkout. The default demo uses visibly labelled fictional sample data with both gains and losses.** Connecting the intended provider requires its endpoint and normalization to the documented format. This is not a claim of live market access or authenticated Investly integration.
 
-## What we learned
+The complete journey supports keyboard input, reduced motion, mobile layout, and a text fallback when 3D cannot load. Browser storage retains the last completed run without login.
 
-Financial effects work best when a player can explain each one. A shrinking shield is savings paying a repair, rather than a penalty for saving. Diversification changes exposure; it doesn't erase risk. A goal needed soon belongs in a different conversation from a long-term investment.
+## Lessons
 
-## Built with
+Account choice and investment choice are different decisions. Diversification changes exposure without removing risk. Emergency savings protect investments from forced sales. Recurring contributions build a habit, but returns remain uncertain. Goals need an appropriate time horizon.
 
-React, TypeScript, Vite, React Three Fiber, Three.js, Drei, Motion, Lucide, Kenney, Playwright.
+## Submission materials
 
-## Submission assets
+Use the current `artifacts/investly-*.png` screenshots and the recording instructions in `docs/DEMO.md`. Previous `life-ledger-*` screenshots/video depict an older flow. Add deployed app, repository, team, and hosted video URLs before submitting. Select the Investly prize opt-in in the actual Devpost form and verify the event's requirements there.
 
-- `artifacts/life-ledger-desktop.png`: the first decision and full town.
-- `artifacts/life-ledger-downturn.png`: debt and market consequences.
-- `artifacts/life-ledger-compare.png`: two completed paths.
-- `artifacts/life-ledger-mobile.png`: mobile layout.
-- One-minute demo: see `docs/DEMO.md` and the recording in `artifacts/`.
-
-## Before publishing
-
-Add the deployed app URL, source repository URL, team details, and hosted one-minute video URL. Attach screenshots. Select the Investly prize opt-in in the actual hackathon form. No Investly integration is claimed. Review the event's current requirements in your Devpost account before submitting.
-
-All financial outcomes are fictional. Kenney models and sounds are CC0; fonts are OFL. Credits and original licenses are included in the repository.
+All accounts and transactions are simulated. Kenney assets and sounds are CC0; font licenses are OFL. Credits and original licenses are included in the repository.
