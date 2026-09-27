@@ -11,6 +11,7 @@ import { CampIsland, CityStreets, isOnCampGround, isOnCityWalkway } from './Town
 
 import { UpgradedHome } from './UpgradedHome';
 import { CampDog } from './CampDog';
+import { SkyClouds } from './SkyClouds';
 
 type Point = [number, number, number];
 const campGround = 1.53;
@@ -442,6 +443,7 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
       <Effects key={trigger} effects={state.effects} reduced={reduced} />
       {state.monthlyGrowth < 0 && <Storm key={trigger} state={state} reduced={reduced} />}
     </>}
+    <SkyClouds reduced={reduced} city={cityVisible} />
     <CampDog position={cityVisible ? [2.8, campGround, 5] : spots.goal} reduced={reduced} />
     <PlayerCharacter reduced={reduced} avatarId={avatarId} path={playerPath} positionRef={playerPosition} city={cityVisible} />
   </>;
