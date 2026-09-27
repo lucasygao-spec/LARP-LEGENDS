@@ -69,7 +69,6 @@ test('mobile red alert, savings path, and final summary work without WebGL or st
   await expect(page.getByText(/Browser storage is unavailable/)).toBeVisible();
   await page.screenshot({path:'artifacts/pitch-mobile.png'});
   await pick(page,'Back to dashboard');await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByRole('progressbar',{name:'Miami penthouse goal'})).toBeVisible();
   await pick(page,'View final summary');await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await pick(page,'Back to dashboard');
   await expect(page.getByRole('tab',{name:'Your ledger'})).toHaveCount(0);await expect(page.locator('.world-status')).toHaveCount(0);
   await pick(page,'How this simulation works');await expect(page.getByRole('dialog')).toContainText('Your financial update stays in the sidebar');await pick(page,'Close dialog');
@@ -176,7 +175,7 @@ test('results dashboard opens from the final breakdown and preserves chart data 
   await expect(page.locator('.profile')).toContainText('Month 1');
 });
 
-test('mobile results keep the new penthouse goal and show stacked feedback without storage', async ({page}) => {
+test('mobile results show stacked feedback without storage', async ({page}) => {
   await noWebGL(page);
   await page.addInitScript(()=>{Storage.prototype.getItem=()=>{throw new Error('Blocked');};Storage.prototype.setItem=()=>{throw new Error('Blocked');};});
   await page.setViewportSize({width:390,height:844}); await start(page);
@@ -197,8 +196,6 @@ test('mobile results keep the new penthouse goal and show stacked feedback witho
   await expect(page.getByRole('heading',{name:'What to learn next'})).toBeInViewport();
   await page.screenshot({path:'artifacts/results-dashboard-mobile.png'});
   await pick(page,'Close summary');
-  await page.getByRole('progressbar',{name:'Miami penthouse goal'}).scrollIntoViewIfNeeded();
-  await expect(page.locator('.goal-total')).toContainText('CA$2,908.75');
   await pick(page,'View monthly summary');
   await expect(summary).toBeVisible();
 });

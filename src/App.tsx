@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import { motion, MotionConfig, useReducedMotion } from 'motion/react';
-import { ArrowRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, House, Info, RotateCcw, ShieldCheck, Sparkles, ThumbsUp, Volume2, VolumeX, Wallet, Wrench, X, Landmark, UserRound } from 'lucide-react';
+import { ArrowRight, CalendarDays, ChevronRight, Lightbulb, Settings, ChartNoAxesCombined, Check, Coins, CreditCard, GitCompareArrows, Info, RotateCcw, ShieldCheck, Sparkles, ThumbsUp, Volume2, VolumeX, Wallet, Wrench, X, Landmark, UserRound } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import story from './data/story.json';
 import { avatars, getAvatar } from './avatarCatalog';
 import type { AvatarId } from './avatarCatalog';
-import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, goalProgress, goalFunds, initialState, money, monthName, netWorth, portfolio, totalDebt, RULES } from './engine';
+import { ACCOUNTS, GOALS, choose, choicesFor, continueGame, disabledReason, exactMoney, initialState, money, monthName, netWorth, portfolio, totalDebt, RULES } from './engine';
 import type { Account, GameState } from './engine';
 import { FUNDS, HOLDINGS, METHODS } from './investments';
 import type { Fund } from './investments';
@@ -254,7 +254,6 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
   }, [choices, modal, profile, loadingMarket, state, penthouseOpen]);
-  const goal = state.goal ? GOALS[state.goal] : null;
   const accountInfo = modal && modal in ACCOUNTS ? ACCOUNTS[modal as Account] : null;
   const fundInfo = modal && modal in FUNDS ? FUNDS[modal as Fund] : null;
   function saveProfile(nextProfile: PlayerProfile) {
@@ -312,7 +311,6 @@ export default function App() {
       {!completed && latestUpdate && <FinancialUpdate {...latestUpdate} />}
       <section className="finances panel-card"><h2><Wallet size={28} />Your Finances</h2><div className="stat-grid"><Stat icon={Coins} label="Cash" changed={accountChanged('Cash')} amount={state.cash} tone="cash" /><Stat icon={ChartNoAxesCombined} label="Investments" changed={accountChanged('Investments')} amount={portfolio(state)} tone="investment" /><Stat icon={CreditCard} label="Debt" changed={accountChanged('Debt')} amount={totalDebt(state)} tone="debt" /><Stat icon={Wallet} label="Savings" changed={accountChanged('General savings')} amount={state.savings} tone="cash" /><Stat icon={ShieldCheck} label="Emergency Fund" changed={accountChanged('Emergency fund')} amount={state.emergencySavings} tone="savings" /></div><div className="account-status"><Landmark size={15} />{state.account ? `${state.account} · Open` : portfolio(state) ? 'Unregistered demo portfolio' : 'Investment account · Not opened'}</div>{state.recurring && <p className="recurring-status">Raise plan: CA$250.00/month → {state.recurring === 'invest' ? state.selectedFund : state.recurring === 'savings' ? 'Savings' : 'Emergency fund'}</p>}{state.method && <p className="recurring-status">{METHODS.find(m => m.id === state.method)?.title}</p>}</section>
       {state.month >= 3 && <section className="portfolio-panel panel-card" aria-label="Portfolio performance"><div><span>Contributed</span><b>{exactMoney(state.totalContributed)}</b></div><div className={state.totalMarketChange < 0 ? 'negative' : 'positive'}><span>Investment growth</span><b>{state.totalMarketChange >= 0 ? '+' : ''}{exactMoney(state.totalMarketChange)}</b></div>{state.totalWithdrawn > 0 && <div><span>Withdrawn</span><b>{exactMoney(state.totalWithdrawn)}</b></div>}<div className={state.monthlyGrowth < 0 ? 'negative' : 'positive'}><span>This month’s market</span><b>{state.monthlyGrowth >= 0 ? '+' : ''}{exactMoney(state.monthlyGrowth)}</b></div><div className="holdings-list">{HOLDINGS.filter(symbol => state.holdings[symbol] > 0).map(symbol => <p key={symbol}>{symbol === 'BIZTECH' ? 'BizTech' : symbol} · {exactMoney(state.holdings[symbol])} · {(state.market.months[state.month - 1][symbol] * 100).toFixed(1)}% this month</p>)}</div><small>{state.market.label} · {state.market.source === 'api' ? state.market.asOf : 'SAMPLE DATA'} · Existing ETF / BizTech holdings</small>{state.stock?.stocks.filter(h => h.contributed > 0).map(h => <p key={h.symbol}>{h.company} ({h.symbol}) · {exactMoney(h.proceeds ?? h.value)}{h.proceeds !== null ? ' · Sold' : ''}</p>)}</section>}
-      <section className="savings-goal panel-card"><div className="goal-heading"><span className="goal-icon"><House size={30} /></span><div><h2>Financial Goal</h2><p>{goal ? `${goal.name} · ${money(goal.target)}` : 'Not selected'}</p></div></div>{goal ? <><div className="progress-rail" role="progressbar" aria-label={`${goal.name} goal`} aria-valuenow={Math.round(goalProgress(state) * 100)} aria-valuemin={0} aria-valuemax={100}><motion.div animate={{ width: `${goalProgress(state) * 100}%` }} /></div><p className="goal-total">{money(goalFunds(state))} / {money(goal.target)} · {(goalProgress(state) * 100).toFixed(1)}%</p></> : <p className="goal-hint">See where your investing choices take you. A Miami goal may be ahead.</p>}</section>
       <button className="simulation-button panel-card" onClick={() => setModal('how')}><Info size={23} />How this simulation works<ChevronRight size={19} /></button>
       <nav className="bottom-nav panel-card" aria-label="Game controls"><button aria-label="Replay" disabled={loadingMarket} onClick={replay}><RotateCcw />Replay</button><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
     </aside>
