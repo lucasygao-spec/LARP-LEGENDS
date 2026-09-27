@@ -47,7 +47,7 @@ export const netWorth = (s: GameState) => round(s.cash + s.savings + s.emergency
 export const penthouseRentalCost = (s: GameState) => s.cash;
 export const goalFunds = (s: GameState) => round(s.cash + s.savings + portfolio(s));
 export const penthouseShortfall = (s: GameState) => round(Math.max(0, GOALS.miami.target - goalFunds(s)));
-export const homeUpgradeUnlocked = (s: GameState) => s.decisionHistory.some(decision => decision.choice === 'raise-invest');
+export const homeUpgradeUnlocked = (s: GameState) => s.account === 'TFSA' || s.decisionHistory.some(decision => decision.choice === 'raise-invest');
 export const goalProgress = (s: GameState) => s.goal ? Math.min(1, goalFunds(s) / GOALS[s.goal].target) : 0;
 // Three districts visualize fund exposure; they are not extra holdings.
 export const townSectors = (s: GameState): Record<Sector, number> => ({ technology: round(s.holdings.QQQ + s.holdings.BIZTECH), energy: s.holdings.VAB, retail: s.holdings.XUS });
@@ -136,14 +136,15 @@ export function choose(state: GameState, id: string): GameState {
   }
   if (s.phase === 'account') {
     s.account = id as Account;
-    if (s.pendingChoice === 'open') { s.reservedGift = 1000; return finishChoice(s,'open',`${s.account} opened. Your CA$1,000.00 gift stays in cash, ready for the investing step.`, `Open ${s.account}`); }
-    s.phase = 'fund'; s.explanation = `${s.account} opened. ${METHODS.find(m=>m.id===s.method)!.feedback}`; return s;
+    const homeReward = s.account === 'TFSA' ? ' Home upgraded! Opening your TFSA unlocked a house for your character.' : '';
+    if (s.pendingChoice === 'open') { s.reservedGift = 1000; return finishChoice(s,'open',`${s.account} opened. Your CA$1,000.00 gift stays in cash, ready for the investing step.${homeReward}`, `Open ${s.account}`); }
+    s.phase = 'fund'; s.explanation = `${s.account} opened. ${METHODS.find(m=>m.id===s.method)!.feedback}${homeReward}`; return s;
   }
   if (s.phase === 'method') { s.method = id; s.pendingChoice = 'raise-invest'; s.phase = s.account ? 'fund' : 'account'; s.explanation = METHODS.find(m=>m.id===id)!.feedback; return s; }
   if (s.phase === 'fund') {
     s.selectedFund = id as Fund; s.recurring = 'invest';
     const amount = Math.min(s.cash, s.reservedGift + RULES.raise); s.reservedGift = 0; invest(s, amount, s.selectedFund);
-    return finishChoice(s,'raise-invest',`${money(amount)} invested in ${id}${amount > RULES.raise ? ' using your birthday gift and raise' : ' from your raise'}. Your recurring plan adds CA$250.00/month. Your next market update can be positive or negative. Home upgraded! Investing your raise unlocked a house for your character.`, `Invest via ${METHODS.find(m=>m.id===s.method)?.title || 'ETF'} → ${id}`);
+    return finishChoice(s,'raise-invest',`${money(amount)} invested in ${id}${amount > RULES.raise ? ' using your birthday gift and raise' : ' from your raise'}. Your recurring plan adds CA$250.00/month. Your next market update can be positive or negative.${homeUpgradeUnlocked(state) ? '' : ' Home upgraded! Investing your raise unlocked a house for your character.'}`, `Invest via ${METHODS.find(m=>m.id===s.method)?.title || 'ETF'} → ${id}`);
   }
   if (s.month === 1) {
     s.path = id as 'university' | 'work';
