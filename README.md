@@ -20,7 +20,7 @@ npm run dev
 3. **Frat flu alert.** A centered panel over a full-screen backdrop presents a $200 medical bill uses the emergency fund or a gift from Mom. Trying an empty fund opens the call-Mom alternative without advancing time.
 4. **Birthday.** Receive $1,000: open TFSA/RRSP/FHSA, buy BizTech, or put it in general savings.
 5. **Raise.** An extra $250/month leads directly to managed app, advisor, brokerage, or one ETF. Open an account if needed, then choose VAB/XUS/QQQ with Learn More buttons.
-6. **Market result.** See a gain or loss, then choose a Miami penthouse goal, higher-risk QQQ, or lower-risk VAB. The Miami path shows your available cash, general savings, and investments against a $1,000,000 price, then offers a one-day penthouse rental priced at your available cash to film a course or “Keep grinding.” Both go straight to a Month 6 summary; renting spends the cash balance, while grinding preserves balances. Replay and compare.
+6. **Market result.** Choose the direct Miami rental path, higher-risk QQQ, or the historical stock pathway under "Invest in low risk." The stock pathway uses Twelve Data, accepts a cash contribution, advances through dated historical prices, then offers continued investing or cash-out followed by an optional rental. The direct Miami path still checks the $1,000,000 goal and offers its existing cash-matched one-day rental or "Keep grinding." Rental confirmation spends the cash balance and reveals the penthouse; View final summary opens the results.
 
 The screenshot’s checkmarks/strikethroughs are interpreted as a sample route, not removed choices. A 10% raise on $30,000/year is $3,000/year or $250/month; the screenshot’s “$250 each year” is corrected to monthly. University stays playable with simplified part-time income. Investment methods converge to keep the pitch short.
 
@@ -36,18 +36,37 @@ Avatar, name, and literacy-level onboarding remain. Settings → Change name or 
 - General savings and emergency savings are separate. Neither earns interest. Birthday money arrives once in Month 4. Opening an account reserves that $1,000 in cash; investing the raise uses $1,250. If the gift was already saved or invested, the first ETF purchase is $250.
 - Monthly market movement applies before new recurring contributions. Rebalancing existing investments does not inflate contributed capital. All figures round to cents.
 - VAB, XUS, and QQQ are real examples; BizTech is simulated. The pitch’s 2–4%, 7–11%, and 18% annual figures appear in Learn More as illustrations, not verified historical CAGR, expected returns, or the values driving the simulation. Simplified relative-risk categories are not issuer risk ratings. All funds can fall.
-- All four investment methods use the same ETF picker and calculation. Provider services/fees, taxes, distributions, FX, account eligibility, contribution limits, and withdrawal restrictions are not simulated. QQQ’s U.S. listing is represented in simulated dollars; currency conversion is omitted.
-- The Miami option sets a $1,000,000 goal and shows the exact shortfall. Goal progress counts cash + general savings + investments, excluding emergency savings; debt is shown separately. It does not sell investments or buy property. The one-day rental costs the player’s cash balance at that step ($3,400 on the sample QQQ path) and spends it in full to film a course with $0 initial revenue. Savings and investments stay untouched. Zero cash disables renting. “Keep grinding” preserves the portfolio and recurring plan. After the shortfall notification, See my options opens the penthouse choices in a full-screen panel. Both endings complete in the same month; the rental expense applies immediately, and the final summary opens full-screen. Replay, compare, or return to the dashboard from the final panel.
+- All four investment methods use the same ETF picker and calculation. Provider services/fees, taxes, distributions, FX (in the original ETF path), account eligibility, contribution limits, and withdrawal restrictions are not simulated. QQQ’s U.S. listing is represented in simulated dollars; currency conversion is omitted.
+- The Miami option sets a $1,000,000 goal and shows the exact shortfall. Goal progress counts cash + general savings + investments, excluding emergency savings; debt is shown separately. It does not sell investments or buy property. The one-day rental costs the player’s cash balance at that step ($3,400 on the sample QQQ path) and spends it in full to film a course with $0 initial revenue. Savings and investments stay untouched. Zero cash disables renting. “Keep grinding” preserves the portfolio and recurring plan. After the shortfall notification, See my options opens the penthouse choices in a full-screen panel. Both endings complete in the same month; the rental expense applies on confirmation, and View final summary opens the results full-screen after the tower reveal. Replay, compare, or return to the dashboard from the final panel.
 - Student debt uses a 6% APR ÷ 12.
 - Net worth = cash + general savings + emergency fund + portfolio − student debt.
 - Ledger identity: net worth = $1,000 + income − spending − interest + market growth.
 - Portfolio identity: contributions + market growth − withdrawals = portfolio value.
 
-Storage uses `investly.previous-run.v6`; older story results are not compared to the new script. Avatar profiles retain their existing storage key.
+Storage uses `investly.previous-run.v7`; older story results are not compared to the new script. Avatar profiles retain their existing storage key.
 
 ## Market data
 
-No provider is configured in this repository. Default returns are clearly labelled **sample data** and include gains and losses. `src/market.ts` can load a normalized historical ETF feed using `VITE_MARKET_DATA_URL` in `.env.local` (restart Vite). Never place secret provider credentials in browser environment variables; use a server-side proxy if credentials are needed.
+### Twelve Data stock pathway
+
+The “Invest in low risk” menu option now opens a stock picker. It explains that individual stocks can lose value. Players choose one or several companies, and the house remains visible through investing and cash-out; only confirming the existing affordable one-day rental unlocks the penthouse and its animation.
+
+1. Create a Twelve Data account at https://twelvedata.com/pricing. The FRED key cannot authenticate with Twelve Data.
+2. Copy `.env.example` to `.env.local` and set `TWELVE_DATA_API_KEY` locally. Never prefix this credential with `VITE_`, commit it, or put it in React code.
+3. Restart `npm run dev`. Vite serves `/api/stocks/scenario` through server-only middleware.
+4. For production, run `npm run build` then `npm start` (Node 22.12+); set `TWELVE_DATA_API_KEY` in the deployment environment and optionally `PORT` (default 3000). A static-only deployment of `dist` needs a separate server hosting this endpoint. `npm run preview` also supplies the endpoint for local checks.
+
+Provider docs: https://twelvedata.com/docs. The server offers Apple (AAPL), Microsoft (MSFT), and Coca-Cola (KO), verified against the provider's supported USD common-stock listings. It requests split-adjusted daily closes for the previous completed calendar year and actual daily USD/CAD exchange rates. All options use the same observed dates near the start, middle and end of the year. At least two complete stock histories must be available; missing observations are never interpolated or replaced with sample prices. Prices are frozen for the run. Provider requests have timeouts, in-flight deduplication, an eight-request/minute guard and bounded one-hour in-memory caching. A fresh complete picker uses five requests; subsequent players reuse cached observations.
+
+All displayed amounts use explicit Canadian-dollar formatting (CA$123.45), including existing game balances. Game CAD buys fractional adjusted shares: contribution / (USD close multiplied by historical USD/CAD). Value = shares multiplied by the current dated close and same-date FX rate. Contributions and balances round to cents; fractional units retain precision. Returns include exchange-rate changes and exclude dividends, fees and taxes. Existing ETF holdings, wages and expenses stay fixed during these historical updates.
+
+Players can buy several companies, add to existing holdings or choose another company at the current date, then request the next update. Buying never advances time or ends the pathway. Players may finish with their investments or cash out all stocks chosen in this pathway; original ETF holdings remain untouched. Cash-out returns sale proceeds before the separate rental confirmation. The concise final summary shows total invested, value/proceeds, gain/loss, rental spending, remaining cash and net worth. Data attribution is a small footer link; the picker only shows company names, tickers, CAD prices and Invest buttons.
+
+Tests use explicitly fictional fixtures under `tests/fixtures`; they are never imported by the application or served as a fallback. A live integration check requires your own Twelve Data key. Check your Twelve Data plan's market-data display rights before public deployment; the Basic plan is intended for internal non-display use.
+
+### Existing ETF feed
+
+The original ETF pathway defaults to clearly labelled **sample data**, including gains and losses. `src/market.ts` can load a normalized historical ETF feed using `VITE_MARKET_DATA_URL` in `.env.local` (restart Vite). This feed is separate from the Twelve Data stock pathway. Never place secret provider credentials in browser environment variables; use a server-side proxy if credentials are needed.
 
 The endpoint must return twelve ordered monthly rows, each containing decimal returns for each real fund:
 

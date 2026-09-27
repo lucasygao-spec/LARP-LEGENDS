@@ -14,6 +14,7 @@ import { CampDog } from './CampDog';
 import { SkyClouds } from './SkyClouds';
 import { UpgradeTransition } from './UpgradeTransition';
 import { usePenthouseIsland } from './PenthouseIsland';
+import { PenthouseFireworks } from './PenthouseFireworks';
 
 type Point = [number, number, number];
 const campGround = 1.53;
@@ -420,6 +421,7 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
     <CampDog position={cityVisible ? [2.8, campGround, 5] : spots.goal} reduced={reduced} />
     <PlayerCharacter reduced={reduced} avatarId={avatarId} path={playerPath} positionRef={playerPosition} city={cityVisible} />
     </group>}</UpgradeTransition>
+    {rented && penthouseVisible && <PenthouseFireworks reduced={reduced} />}
     <SkyClouds reduced={reduced} city={cityVisible || penthouseVisible} />
   </>;
 }

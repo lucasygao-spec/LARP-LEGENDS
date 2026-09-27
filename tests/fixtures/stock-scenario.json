@@ -1,0 +1,77 @@
+{
+  "source": "Twelve Data",
+  "stocks": [
+    {
+      "source": "Twelve Data",
+      "symbol": "FIX",
+      "company": "Alpha Fixtures",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "prices": [
+        {
+          "date": "2025-01-02",
+          "close": 100,
+          "fx": 1.25
+        },
+        {
+          "date": "2025-07-01",
+          "close": 80,
+          "fx": 1.3
+        },
+        {
+          "date": "2025-12-31",
+          "close": 120,
+          "fx": 1.25
+        }
+      ]
+    },
+    {
+      "source": "Twelve Data",
+      "symbol": "BETA",
+      "company": "Beta Fixtures",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "prices": [
+        {
+          "date": "2025-01-02",
+          "close": 50,
+          "fx": 1.25
+        },
+        {
+          "date": "2025-07-01",
+          "close": 75,
+          "fx": 1.3
+        },
+        {
+          "date": "2025-12-31",
+          "close": 60,
+          "fx": 1.25
+        }
+      ]
+    },
+    {
+      "source": "Twelve Data",
+      "symbol": "GAMMA",
+      "company": "Gamma Fixtures",
+      "exchange": "NASDAQ",
+      "currency": "USD",
+      "prices": [
+        {
+          "date": "2025-01-02",
+          "close": 200,
+          "fx": 1.25
+        },
+        {
+          "date": "2025-07-01",
+          "close": 180,
+          "fx": 1.3
+        },
+        {
+          "date": "2025-12-31",
+          "close": 220,
+          "fx": 1.25
+        }
+      ]
+    }
+  ]
+}
