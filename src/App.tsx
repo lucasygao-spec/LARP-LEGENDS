@@ -15,6 +15,9 @@ import { FUNDS, HOLDINGS, METHODS } from './investments';
 import type { Fund } from './investments';
 import { loadMarketFeed } from './market';
 import { StockPanel, StockSummary } from './StockPanel';
+import { ReplayButton } from './ReplayButton';
+import type { RevealOrigin } from './ReplayButton';
+import { DemoEnding } from './DemoEnding';
 const Town = lazy(() => import('./Town'));
 const STORAGE_KEY = 'investly.previous-run.v7';
 const PROFILE_KEY = 'investly.player.v1';
@@ -171,6 +174,7 @@ export default function App() {
   const [latestUpdate, setLatestUpdate] = useState<{ before: GameState; after: GameState; explanation: string } | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(true);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [demoEnding, setDemoEnding] = useState<RevealOrigin | null>(null);
   const summaryButton = useRef<HTMLButtonElement>(null);
   const worldPanel = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -230,13 +234,13 @@ export default function App() {
   useEffect(() => { if (state.month > 1 || state.phase !== 'choice') heading.current?.focus({ preventScroll: true }); }, [state.phase, state.month]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.repeat || (state.phase === 'penthouse' && !penthouseOpen) || modal || !profile || loadingMarket || e.ctrlKey || e.metaKey || e.altKey || !/^[1-4]$/.test(e.key)) return;
+      if (demoEnding || e.repeat || (state.phase === 'penthouse' && !penthouseOpen) || modal || !profile || loadingMarket || e.ctrlKey || e.metaKey || e.altKey || !/^[1-4]$/.test(e.key)) return;
       if ((e.target as HTMLElement).matches('input, textarea, select')) return;
       const choice = choices[Number(e.key) - 1];
       if (choice && !disabledReason(state, choice.id)) { e.preventDefault(); makeChoice(choice.id); }
     };
     window.addEventListener('keydown', onKey); return () => window.removeEventListener('keydown', onKey);
-  }, [choices, modal, profile, loadingMarket, state, penthouseOpen]);
+  }, [choices, modal, profile, loadingMarket, state, penthouseOpen, demoEnding]);
   const accountInfo = modal && modal in ACCOUNTS ? ACCOUNTS[modal as Account] : null;
   const fundInfo = modal && modal in FUNDS ? FUNDS[modal as Fund] : null;
   function saveProfile(nextProfile: PlayerProfile) {
@@ -280,7 +284,7 @@ export default function App() {
           {loadingMarket && <p role="status">Loading market data…</p>}</>}
         </motion.div><div className="lesson" aria-live="polite"><Lightbulb size={23} /><p>{lesson}</p></div>
       </section>;
-  return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="game-layout" data-reduced-motion={reduced}>
+  return <MotionConfig reducedMotion={quietMotion ? 'always' : 'user'}><main className="game-layout" data-reduced-motion={reduced} inert={!!demoEnding}>
     <aside className="decision-panel" aria-label="Your decisions">
       <div className="profile panel-card">
         <button type="button" className="avatar" aria-label={`Edit player, currently ${profile.name}, ${playerAvatar.name}`} title="Change name or avatar" onClick={() => setModal('profile')}><img src={playerAvatar.preview} alt="" /></button>
@@ -298,7 +302,7 @@ export default function App() {
       <section className="finances panel-card"><h2><Wallet size={28} />Your Finances</h2><div className="stat-grid"><Stat icon={Coins} label="Cash" changed={accountChanged('Cash')} amount={state.cash} tone="cash" /><Stat icon={ChartNoAxesCombined} label="Investments" changed={accountChanged('Investments')} amount={portfolio(state)} tone="investment" /><Stat icon={CreditCard} label="Debt" changed={accountChanged('Debt')} amount={totalDebt(state)} tone="debt" /><Stat icon={Wallet} label="Savings" changed={accountChanged('General savings')} amount={state.savings} tone="cash" /><Stat icon={ShieldCheck} label="Emergency Fund" changed={accountChanged('Emergency fund')} amount={state.emergencySavings} tone="savings" /></div><div className="account-status"><Landmark size={15} />{state.account ? `${state.account} · Open` : portfolio(state) ? 'Unregistered demo portfolio' : 'Investment account · Not opened'}</div>{state.recurring && <p className="recurring-status">Raise plan: CA$250.00/month → {state.recurring === 'invest' ? state.selectedFund : state.recurring === 'savings' ? 'Savings' : 'Emergency fund'}</p>}{state.method && <p className="recurring-status">{METHODS.find(m => m.id === state.method)?.title}</p>}</section>
       {state.month >= 3 && <section className="portfolio-panel panel-card" aria-label="Portfolio performance"><div><span>Contributed</span><b>{exactMoney(state.totalContributed)}</b></div><div className={state.totalMarketChange < 0 ? 'negative' : 'positive'}><span>Investment growth</span><b>{state.totalMarketChange >= 0 ? '+' : ''}{exactMoney(state.totalMarketChange)}</b></div>{state.totalWithdrawn > 0 && <div><span>Withdrawn</span><b>{exactMoney(state.totalWithdrawn)}</b></div>}<div className={state.monthlyGrowth < 0 ? 'negative' : 'positive'}><span>This month’s market</span><b>{state.monthlyGrowth >= 0 ? '+' : ''}{exactMoney(state.monthlyGrowth)}</b></div><div className="holdings-list">{HOLDINGS.filter(symbol => state.holdings[symbol] > 0).map(symbol => <p key={symbol}>{symbol === 'BIZTECH' ? 'BizTech' : symbol} · {exactMoney(state.holdings[symbol])} · {(state.market.months[state.month - 1][symbol] * 100).toFixed(1)}% this month</p>)}</div><small>{state.market.label} · {state.market.source === 'api' ? state.market.asOf : 'SAMPLE DATA'} · Existing ETF / BizTech holdings</small>{state.stock?.stocks.filter(h => h.contributed > 0).map(h => <p key={h.symbol}>{h.company} ({h.symbol}) · {exactMoney(h.proceeds ?? h.value)}{h.proceeds !== null ? ' · Sold' : ''}</p>)}</section>}
       <button className="simulation-button panel-card" onClick={() => setModal('how')}><Info size={23} />How this simulation works<ChevronRight size={19} /></button>
-      <nav className="bottom-nav panel-card" aria-label="Game controls"><button aria-label="Replay" disabled={loadingMarket} onClick={replay}><RotateCcw />Replay</button><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
+      <nav className="bottom-nav panel-card" aria-label="Game controls"><ReplayButton disabled={loadingMarket} onReplay={replay} onDemoEnding={setDemoEnding} /><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
     </aside>
     <section ref={worldPanel} className={`world-panel ${completed && resultsOpen ? 'has-summary' : ''}`} aria-label="Your financial world"><div className="world-toolbar"><div className="toolbar-actions"><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
       <AmbientBackdrop reduced={reduced} sky />
@@ -308,5 +312,5 @@ export default function App() {
     </section>
     {storyInPopup && <FullScreenPanel key={completed ? 'final-summary' : state.month === 3 ? 'medical-alert' : 'penthouse-options'} tone={completed ? 'summary' : state.month === 3 ? 'danger' : 'default'} eyebrow={completed ? 'YOUR FINAL SUMMARY · MONTH 6' : state.month === 3 ? 'UNEXPECTED EXPENSE · MONTH 3' : 'YOUR NEXT MOVE · MONTH 6'}>{storyContent}</FullScreenPanel>}
     {modal && <Modal title={fundInfo || accountInfo ? `${modal} · Learn More` : modal === 'how' ? 'How Investly works' : modal === 'profile' ? 'Edit your player' : modal === 'settings' ? 'Make yourself at home' : 'Two paths. A clearer picture.'} onClose={() => setModal(null)} wide={modal === 'compare'}>{fundInfo ? <><h3>{fundInfo.name}</h3><p className="modal-intro">{fundInfo.description}</p><p>{fundInfo.risk}. These are relative demo categories, not the issuer’s official risk rating.</p><p className="notice">Pitch illustration: {fundInfo.illustration} per year. This is not verified historical CAGR, a forecast, or the return used in your game.</p><p>Actual game changes come from the labelled monthly market sequence. All funds can lose value.</p><a href={fundInfo.url} target="_blank" rel="noreferrer">Read the fund issuer’s guide ↗</a></> : accountInfo ? <><p className="modal-intro">{accountInfo.description}</p><p>This is a simulated account. Real eligibility, contribution limits, and withdrawal rules apply.</p><a href={accountInfo.url} target="_blank" rel="noreferrer">Read the CRA account guide ↗</a></> : modal === 'how' ? <HowItWorks state={state} /> : modal === 'compare' ? <Compare state={state} previous={previous} /> : modal === 'profile' ? <ProfileEditor profile={profile} onSave={saveProfile} onCancel={() => setModal('settings')} /> : <div className="settings-list"><button onClick={() => setModal('profile')}><UserRound /><span><b>Change name or avatar</b><small>Customize your player</small></span><ChevronRight size={18} /></button>{storageUnavailable && <p className="fine-print">Changes last for this session; browser storage is unavailable.</p>}<button aria-pressed={sound} onClick={() => setSound(!sound)}><Volume2 /><span><b>Game sounds</b><small>Feedback with every choice</small></span><span className={`toggle ${sound ? 'on' : ''}`} /></button><button aria-pressed={quietMotion} onClick={() => setQuietMotion(!quietMotion)}><Sparkles /><span><b>Reduce motion</b><small>Pause idle motion and coin animations</small></span><span className={`toggle ${quietMotion ? 'on' : ''}`} /></button><p className="fine-print">Your system’s reduced-motion preference is always respected.</p></div>}</Modal>}
-  </main></MotionConfig>;
+  </main>{demoEnding && <DemoEnding origin={demoEnding} reduced={reduced} onClose={() => setDemoEnding(null)} />}</MotionConfig>;
 }

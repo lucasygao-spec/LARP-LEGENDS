@@ -313,3 +313,43 @@
 .intro-preview-fallback{position:absolute;inset:0;opacity:1;transition:opacity .4s ease;pointer-events:none}
 .intro-preview-fallback img{width:100%;height:100%;object-fit:contain}
 .intro-preview[data-ready=true] .intro-preview-fallback{opacity:0}
+
+/* Demo ending: the acronym unfolds into one continuous heading. */
+.replay-button { touch-action: manipulation; }
+.larp-ending {
+  position: fixed; inset: 0; z-index: 1000; isolation: isolate;
+  display: flex; align-items: center; justify-content: center;
+  padding: clamp(24px, 5vw, 64px); overflow: auto; overscroll-behavior: contain;
+  background: #11373b; color: #7ed0c0; outline: none;
+  animation: larp-reveal .68s cubic-bezier(.22, 1, .36, 1) both;
+}
+.larp-wash { position: absolute; inset: 0; pointer-events: none; background: #7ed0c0; animation: larp-wash .76s ease-out both; }
+.larp-content { position: relative; width: min(1280px, 100%); padding: 40px 0; text-align: center; pointer-events: none; }
+.larp-content h1 { margin: 0; font-family: 'DM Sans', sans-serif; font-size: clamp(18px, 5.8vw, 84px); font-weight: 800; line-height: 1.2; letter-spacing: -.05em; color: #7ed0c0; white-space: nowrap; }
+.larp-heading-line { display: inline-flex; align-items: baseline; transform: scale(1.65); transform-origin: center; transition: transform .92s cubic-bezier(.22, 1, .36, 1); }
+.larp-intro { display: inline-grid; grid-template-columns: 1fr; animation: larp-intro-out .44s 1.6s cubic-bezier(.65, 0, .35, 1) both; }
+.larp-intro > span, .larp-tail > span { min-width: 0; overflow: hidden; white-space: pre; }
+.larp-acronym, .larp-word { display: inline-flex; align-items: baseline; }
+.larp-letter { position: relative; display: inline-block; animation: larp-type .01s var(--letter-delay) steps(1, end) both; }
+.larp-letter::after { content: ''; position: absolute; right: -.06em; top: .16em; width: .018em; height: .85em; background: #afcccc; opacity: 0; animation: larp-caret .08s var(--letter-delay) linear both; }
+.larp-acronym > .larp-word:last-child > .larp-letter::after { animation-duration: .36s; }
+.larp-tail { display: inline-grid; grid-template-columns: 0fr; opacity: 0; transition: grid-template-columns .84s var(--expand-delay) cubic-bezier(.22, 1, .36, 1), opacity .36s var(--expand-delay); }
+.larp-expanded .larp-heading-line { transform: scale(1); }
+.larp-expanded .larp-intro { grid-template-columns: 0fr; opacity: 0; visibility: hidden; }
+.larp-expanded .larp-tail { grid-template-columns: 1fr; opacity: 1; }
+.larp-line { height: 2px; margin: clamp(40px, 5vw, 64px) auto 0; background: #477a7b; transform-origin: center; animation: larp-line .88s 2.12s both; }
+.larp-exit { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: default; }
+.larp-exit:focus-visible { outline: 2px solid #7ed0c0; outline-offset: -8px; }
+@keyframes larp-reveal { from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); } to { clip-path: circle(150vmax at var(--reveal-x) var(--reveal-y)); } }
+@keyframes larp-wash { from { opacity: .85; } to { opacity: 0; } }
+@keyframes larp-type { from { opacity: 0; } to { opacity: 1; } }
+@keyframes larp-caret { 0%, 100% { opacity: 0; } 1%, 99% { opacity: 1; } }
+@keyframes larp-intro-out { from { grid-template-columns: 1fr; opacity: 1; visibility: visible; } to { grid-template-columns: 0fr; opacity: 0; visibility: hidden; } }
+@keyframes larp-line { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.larp-ending-reduced, .larp-ending-reduced *, .larp-ending-reduced *::after { animation: none !important; transition: none !important; }
+.larp-ending-reduced .larp-wash { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .larp-ending, .larp-ending *, .larp-ending *::after { animation: none !important; transition: none !important; }
+  .larp-wash { opacity: 0; }
+}
+@media (max-width: 600px) { .larp-ending { padding: 28px 20px; } }
