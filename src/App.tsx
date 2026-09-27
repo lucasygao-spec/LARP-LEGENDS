@@ -128,6 +128,12 @@ export default function App() {
   const [state, setState] = useState(initialState);
   const [latestUpdate, setLatestUpdate] = useState<{ before: GameState; after: GameState; explanation: string } | null>(null);
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const worldPanel = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (state.decisionHistory.some(decision => decision.choice === 'rent-penthouse') && window.matchMedia('(max-width: 760px)').matches) {
+      worldPanel.current?.scrollIntoView({ block: 'start', behavior: 'instant' });
+    }
+  }, [state]);
   const [penthouseOpen, setPenthouseOpen] = useState(false);
   const transitionLock = useRef(false);
   useEffect(() => { transitionLock.current = false; }, [state]);
@@ -155,6 +161,7 @@ export default function App() {
     if (loadingMarket || transitionLock.current || disabledReason(state, id)) return;
     transitionLock.current = true;
     const decision = choose(state, id);
+    if (id === 'rent-penthouse') setSummaryOpen(false);
     const nextState = decision.phase === 'result' ? continueGame(decision) : decision;
     if (nextState.month !== decision.month) nextState.effects = [...decision.effects, ...nextState.effects];
     if (hasFinancialUpdate(state, nextState)) setLatestUpdate({ before: state, after: nextState, explanation: decision.explanation });
@@ -238,7 +245,7 @@ export default function App() {
       <button className="simulation-button panel-card" onClick={() => setModal('how')}><Info size={23} />How this simulation works<ChevronRight size={19} /></button>
       <nav className="bottom-nav panel-card" aria-label="Game controls"><button aria-label="Replay" disabled={loadingMarket} onClick={replay}><RotateCcw />Replay</button><button aria-label="Compare paths" onClick={() => setModal('compare')}><ChartNoAxesCombined />Compare</button><button onClick={() => setModal('settings')}><Settings />Settings</button></nav>
     </aside>
-    <section className="world-panel" aria-label="Your financial world"><div className="world-toolbar"><div className="toolbar-actions"><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
+    <section ref={worldPanel} className="world-panel" aria-label="Your financial world"><div className="world-toolbar"><div className="toolbar-actions"><button className="sound-button" aria-label={sound ? 'Mute sounds' : 'Enable sounds'} aria-pressed={sound} onClick={() => setSound(!sound)}>{sound ? <Volume2 size={18} /> : <VolumeX size={18} />}</button></div></div>
       <div className="world-view"><Suspense fallback={<div className="scene-loading">Setting up your campsite…</div>}><Town state={state} reduced={reduced} zoom={1} avatarId={profile.avatarId} avatarName={profile.name} /></Suspense></div>
       <span className="simulation-note">Simulated money · {state.market.source === 'api' ? 'Historical market returns' : 'Sample returns'}</span>
     </section>

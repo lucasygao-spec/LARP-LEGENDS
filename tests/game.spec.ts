@@ -76,12 +76,12 @@ test('BizTech and managed investing preserve fund balances through the automatic
   await expect(page.locator('.profile')).toContainText('Month 6');await pick(page,'Invest in low risk');
   await expect(page.getByRole('dialog')).toContainText('Your choices added up.');await expect(page.locator('.stat.debt')).toContainText('$0');await expect(page.locator('.holdings-list')).toContainText('VAB');
 });
-test('cash-matched rental opens the final summary immediately and highlights changed accounts',async({page})=>{
+test('cash-matched rental exposes the final summary button and highlights changed accounts',async({page})=>{
   await noWebGL(page);await start(page);await reachInvesting(page);await pick(page,'Buy a penthouse in Miami');
   await expect(page.locator('.story-description')).toContainText('$995,000.00');await pick(page,'See my options');await checkFullScreenPanel(page);
   await expect(page.getByRole('button',{name:'Rent a penthouse to larp and sell a course'})).toContainText('$3,400');
   await expect(page.locator('.alert-panel .story-card > div').nth(1)).toHaveCSS('opacity','1');await page.screenshot({path:'artifacts/pitch-penthouse.png'});
-  await pick(page,'Rent a penthouse to larp and sell a course');await checkFullScreenPanel(page);
+  await pick(page,'Rent a penthouse to larp and sell a course');await pick(page,'View final summary');await checkFullScreenPanel(page);
   await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await expect(page.locator('.stat.cash').first()).toContainText('$0');
   await expect(page.getByRole('dialog')).toContainText('Course revenue so far: $0');
   await expect(page.locator('.ending-summary')).toContainText('$1,600.00');
