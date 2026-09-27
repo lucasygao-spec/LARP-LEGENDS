@@ -3,13 +3,14 @@ import type { ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Line, useAnimations, useGLTF } from '@react-three/drei';
-import { Box3, Group, MathUtils, Mesh, MeshStandardMaterial, Plane, PointLight, SkinnedMesh, Vector3 } from 'three';
+import { Box3, Group, MathUtils, Mesh, MeshStandardMaterial, Plane, MeshBasicMaterial, SkinnedMesh, Vector3 } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Effect, GameState, Sector } from './engine';
 import { goalProgress, homeUpgradeUnlocked, money, portfolio, townSectors, totalDebt } from './engine';
 import { CampIsland, CityStreets, isOnCampGround, isOnCityWalkway } from './TownScenery';
 
 import { UpgradedHome } from './UpgradedHome';
+import { CampDog } from './CampDog';
 
 type Point = [number, number, number];
 const campGround = 1.53;
@@ -42,7 +43,7 @@ const cityBuildings: { name: string; position: [number, number]; size: number; r
   { name: 'city-apartments', position: [0, 3.4], size: 2.5, radius: 1.35 },
   { name: 'city-home', position: [4.5, 3.4], size: 2.6, radius: 1.25 },
 ];
-const cityObstacles: [number, number, number][] = [[0, 0, 1.55], ...cityBuildings.map(({ position, radius }) => [position[0], position[1], radius] as [number, number, number])];
+const cityObstacles: [number, number, number][] = [[0, 0, 1.55], [2.8, 5, 1.1], ...cityBuildings.map(({ position, radius }) => [position[0], position[1], radius] as [number, number, number])];
 const walkObstacles: [number, number, number][] = [
   [spots.goal[0], spots.goal[2], 1.1],
   ...campProps.map(({ position, radius }) => [position[0], position[1], radius] as [number, number, number]),
@@ -221,18 +222,54 @@ function CampGrass() {
     </mesh>)}
   </group>)}</group>;
 }
-function Campfire({ progress, reduced }: { progress: number; reduced: boolean }) {
-  const group = useRef<Group>(null);
-  const light = useRef<PointLight>(null);
-  const target = 0.8 + progress * 0.3;
+function HomeTransformation({ upgraded, reduced }: { upgraded: boolean; reduced: boolean }) {
+  const content = useRef<Group>(null);
+  const glow = useRef<Mesh>(null);
+  const glowMaterial = useRef<MeshBasicMaterial>(null);
+  const previous = useRef(upgraded);
+  const elapsed = useRef(1);
+  const swapped = useRef(upgraded);
+  const [showHouse, setShowHouse] = useState(upgraded);
+  const [transforming, setTransforming] = useState(false);
+  useEffect(() => {
+    const animate = upgraded && !previous.current && !reduced;
+    previous.current = upgraded;
+    elapsed.current = animate ? 0 : 1;
+    swapped.current = animate ? false : upgraded;
+    setShowHouse(animate ? false : upgraded);
+    setTransforming(animate);
+    if (content.current) content.current.scale.setScalar(1);
+    if (glow.current) glow.current.visible = animate;
+  }, [upgraded, reduced]);
   useFrame((_, delta) => {
-    if (group.current) {
-      const scale = reduced ? target : MathUtils.damp(group.current.scale.x, target, 4, delta);
-      group.current.scale.setScalar(scale);
+    if (elapsed.current >= 1 || !content.current) return;
+    elapsed.current = Math.min(1, elapsed.current + delta / 0.95);
+    const t = elapsed.current;
+    if (t < 0.3) {
+      const shrink = 1 - t / 0.3;
+      content.current.scale.setScalar(Math.max(0.001, shrink * shrink));
+    } else {
+      if (!swapped.current) { swapped.current = true; setShowHouse(true); }
+      const grow = (t - 0.3) / 0.7;
+      // A small overshoot makes the new home settle into place.
+      const scale = 1 + 2.1 * (grow - 1) ** 3 + 1.1 * (grow - 1) ** 2;
+      content.current.scale.setScalar(Math.max(0.001, scale));
     }
-    if (light.current && !reduced) light.current.intensity = 1.1 + Math.sin(performance.now() / 180) * 0.25;
+    if (glow.current) {
+      glow.current.scale.setScalar(1 + t * 5);
+      glow.current.visible = t < 1;
+    }
+    if (glowMaterial.current) glowMaterial.current.opacity = Math.sin(t * Math.PI) * 0.65;
+    if (t === 1) { content.current.scale.setScalar(1); setTransforming(false); }
   });
-  return <group ref={group} position={spots.goal}><Model name="camp/campfire" size={2.5} /><Model name="camp/fire" size={1.8} position={[0, 0.06, 0]} /><pointLight ref={light} position={[0, 1.3, 0]} color="#ff8b32" intensity={1.1} distance={6} /></group>;
+  return <group position={spots.home} name="home-transformation">
+    <group ref={content}>
+      {showHouse ? <UpgradedHome position={[0, 0, 0]} showLabel={!transforming} /> : <group scale={[1, 0.9, 0.7]}><Model name="camp/tent" size={tentSize} /></group>}
+    </group>
+    <mesh ref={glow} visible={false} position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[0.88, 1, 48]} /><meshBasicMaterial ref={glowMaterial} color="#b7f3ce" transparent opacity={0} depthWrite={false} />
+    </mesh>
+  </group>;
 }
 function PlayerCharacter({ reduced, avatarId, path, positionRef, city }: { reduced: boolean; avatarId: string; path: Point[]; positionRef: { current: Point }; city: boolean }) {
   const group = useRef<Group>(null);
@@ -397,15 +434,15 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
       <UpgradedHome position={[0, campGround, 0]} scale={0.85} rotation={0} />
     </> : <>
       <CampIsland height={campGround} />
-      {homeUpgradeUnlocked(state) ? <UpgradedHome position={spots.home} /> : <group position={spots.home} scale={[1, 0.9, 0.7]}><Model name="camp/tent" size={tentSize} /></group>}
+      <HomeTransformation upgraded={homeUpgradeUnlocked(state)} reduced={reduced} />
       <CampGrass />
       <Shield amount={state.emergencySavings} reduced={reduced} />
-      <Campfire progress={goalProgress(state)} reduced={reduced} />
       {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <CampGrowthTree key={sector} sector={sector} value={townSectors(state)[sector]} reduced={reduced} />)}
       {campProps.map((prop, index) => <Model key={`${prop.name}-${index}`} name={`camp/${prop.name}`} position={[prop.position[0], campGround, prop.position[1]]} size={prop.size} rotation={prop.rotation} />)}
       <Effects key={trigger} effects={state.effects} reduced={reduced} />
       {state.monthlyGrowth < 0 && <Storm key={trigger} state={state} reduced={reduced} />}
     </>}
+    <CampDog position={cityVisible ? [2.8, campGround, 5] : spots.goal} reduced={reduced} />
     <PlayerCharacter reduced={reduced} avatarId={avatarId} path={playerPath} positionRef={playerPosition} city={cityVisible} />
   </>;
 }
@@ -416,7 +453,7 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 function TextTown({ state }: { state: GameState }) {
-  return <div className="text-town"><span className="eyebrow">Your campsite, in words</span><h3>Every choice still counts.</h3>{homeUpgradeUnlocked(state) && <p>Home upgraded: investing your raise in an ETF replaced your tent with a house.</p>}<p>The 3D campsite is unavailable. Your full game and financial results are ready to play.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>General savings <b>{money(state.savings)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(totalDebt(state))}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
+  return <div className="text-town"><span className="eyebrow">Your campsite, in words</span><h3>Every choice still counts.</h3>{homeUpgradeUnlocked(state) && <p>Home upgraded: investing your raise in an ETF replaced your tent with a house.</p>}<p>The 3D campsite is unavailable. Your full game and financial results are ready to play. A dog keeps your character company outside their home.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>General savings <b>{money(state.savings)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(totalDebt(state))}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
 }
 export default function Town({ state, reduced, zoom, avatarId, avatarName }: { state: GameState; reduced: boolean; zoom: number; avatarId: string; avatarName: string }) {
   const [ready, setReady] = useState(false);
@@ -436,5 +473,5 @@ export default function Town({ state, reduced, zoom, avatarId, avatarName }: { s
   const [available] = useState(() => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } });
   const fallback = <TextTown state={state} />;
   if (!available) return fallback;
-  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [0, 20, 22], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} data-city-ready={ready} data-home-upgraded={homeUpgradeUnlocked(state)} aria-label={`${cityUnlocked ? 'City' : 'Campsite'} with ${homeUpgradeUnlocked(state) ? 'an upgraded house' : 'a tent'} and ${avatarName}'s selected character`}><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} avatarId={avatarId} cityUnlocked={cityUnlocked} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Setting up your camp…</div>}</SceneBoundary>;
+  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [0, 20, 22], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} data-city-ready={ready} data-home-upgraded={homeUpgradeUnlocked(state)} aria-label={`${cityUnlocked ? 'City' : 'Campsite'} with ${homeUpgradeUnlocked(state) ? 'an upgraded house' : 'a tent'}, a dog, and ${avatarName}'s selected character`}><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} avatarId={avatarId} cityUnlocked={cityUnlocked} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Setting up your camp…</div>}</SceneBoundary>;
 }
