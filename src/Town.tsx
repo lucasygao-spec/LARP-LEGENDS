@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import type { ThreeEvent } from '@react-three/fiber';
 import { Line, useAnimations, useGLTF } from '@react-three/drei';
-import { Box3, Group, MathUtils, Mesh, MeshStandardMaterial, Plane, MeshBasicMaterial, SkinnedMesh, Vector3 } from 'three';
+import { Box3, Group, MathUtils, Mesh, MeshStandardMaterial, Plane, SkinnedMesh, Vector3 } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Effect, GameState, Sector } from './engine';
 import { goalProgress, homeUpgradeUnlocked, money, portfolio, townSectors, totalDebt } from './engine';
@@ -12,6 +12,9 @@ import { CampIsland, CityStreets, isOnCampGround, isOnCityWalkway } from './Town
 import { UpgradedHome } from './UpgradedHome';
 import { CampDog } from './CampDog';
 import { SkyClouds } from './SkyClouds';
+import { UpgradeTransition } from './UpgradeTransition';
+import { usePenthouseIsland } from './PenthouseIsland';
+import { PenthouseFireworks } from './PenthouseFireworks';
 
 type Point = [number, number, number];
 const campGround = 1.53;
@@ -224,53 +227,9 @@ function CampGrass() {
   </group>)}</group>;
 }
 function HomeTransformation({ upgraded, reduced }: { upgraded: boolean; reduced: boolean }) {
-  const content = useRef<Group>(null);
-  const glow = useRef<Mesh>(null);
-  const glowMaterial = useRef<MeshBasicMaterial>(null);
-  const previous = useRef(upgraded);
-  const elapsed = useRef(1);
-  const swapped = useRef(upgraded);
-  const [showHouse, setShowHouse] = useState(upgraded);
-  const [transforming, setTransforming] = useState(false);
-  useEffect(() => {
-    const animate = upgraded && !previous.current && !reduced;
-    previous.current = upgraded;
-    elapsed.current = animate ? 0 : 1;
-    swapped.current = animate ? false : upgraded;
-    setShowHouse(animate ? false : upgraded);
-    setTransforming(animate);
-    if (content.current) content.current.scale.setScalar(1);
-    if (glow.current) glow.current.visible = animate;
-  }, [upgraded, reduced]);
-  useFrame((_, delta) => {
-    if (elapsed.current >= 1 || !content.current) return;
-    elapsed.current = Math.min(1, elapsed.current + delta / 0.95);
-    const t = elapsed.current;
-    if (t < 0.3) {
-      const shrink = 1 - t / 0.3;
-      content.current.scale.setScalar(Math.max(0.001, shrink * shrink));
-    } else {
-      if (!swapped.current) { swapped.current = true; setShowHouse(true); }
-      const grow = (t - 0.3) / 0.7;
-      // A small overshoot makes the new home settle into place.
-      const scale = 1 + 2.1 * (grow - 1) ** 3 + 1.1 * (grow - 1) ** 2;
-      content.current.scale.setScalar(Math.max(0.001, scale));
-    }
-    if (glow.current) {
-      glow.current.scale.setScalar(1 + t * 5);
-      glow.current.visible = t < 1;
-    }
-    if (glowMaterial.current) glowMaterial.current.opacity = Math.sin(t * Math.PI) * 0.65;
-    if (t === 1) { content.current.scale.setScalar(1); setTransforming(false); }
-  });
-  return <group position={spots.home} name="home-transformation">
-    <group ref={content}>
-      {showHouse ? <UpgradedHome position={[0, 0, 0]} showLabel={!transforming} /> : <group scale={[1, 0.9, 0.7]}><Model name="camp/tent" size={tentSize} /></group>}
-    </group>
-    <mesh ref={glow} visible={false} position={[0, 0.04, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-      <ringGeometry args={[0.88, 1, 48]} /><meshBasicMaterial ref={glowMaterial} color="#b7f3ce" transparent opacity={0} depthWrite={false} />
-    </mesh>
-  </group>;
+  return <UpgradeTransition upgraded={upgraded} reduced={reduced} position={spots.home} name="home-transformation">{(showHouse, transforming) =>
+    showHouse ? <UpgradedHome position={[0, 0, 0]} showLabel={!transforming} /> : <group scale={[1, 0.9, 0.7]}><Model name="camp/tent" size={tentSize} /></group>
+  }</UpgradeTransition>;
 }
 function PlayerCharacter({ reduced, avatarId, path, positionRef, city }: { reduced: boolean; avatarId: string; path: Point[]; positionRef: { current: Point }; city: boolean }) {
   const group = useRef<Group>(null);
@@ -358,7 +317,7 @@ function Storm({ state, reduced }: { state: GameState; reduced: boolean }) {
   useFrame(({ clock }) => { start.current ??= clock.elapsedTime; if (group.current) group.current.visible = clock.elapsedTime - start.current < (reduced ? 0 : 6); });
   return <group ref={group}>{(['technology', 'energy', 'retail'] as Sector[]).filter(s => townSectors(state)[s] > 0).map(sector => <group key={sector} position={[spots[sector][0], sector === 'technology' ? 5.1 : sector === 'energy' ? 4.5 : 3.8, spots[sector][2]]}>{[-0.45, 0, 0.45].map((x, i) => <mesh key={x} position={[x, i % 2 * 0.17, 0]} scale={[0.7, 0.35, 0.45]}><sphereGeometry args={[0.6, 8, 6]} /><meshStandardMaterial color="#9daabb" /></mesh>)}<Line points={[[0, -0.25, 0], [-0.15, -0.6, 0], [0.12, -0.55, 0], [-0.1, -0.95, 0]]} color="#ffd776" lineWidth={3} /></group>)}</group>;
 }
-function CameraMotion({ trigger, reduced, zoom, cityUnlocked, onCityReveal }: { trigger: string; reduced: boolean; zoom: number; cityUnlocked: boolean; onCityReveal: () => void }) {
+function CameraMotion({ trigger, reduced, zoom, cityUnlocked, penthouseVisible, onCityReveal }: { trigger: string; reduced: boolean; zoom: number; cityUnlocked: boolean; penthouseVisible: boolean; onCityReveal: () => void }) {
   const { camera, size } = useThree(); const time = useRef(0);
   const transition = useRef<'camp' | 'zoom-out' | 'zoom-in' | 'city'>(cityUnlocked ? 'city' : 'camp');
   const transitionTime = useRef(0);
@@ -373,6 +332,13 @@ function CameraMotion({ trigger, reduced, zoom, cityUnlocked, onCityReveal }: { 
     }
   }, [cityUnlocked]);
   useFrame((_, delta) => {
+    if (penthouseVisible) {
+      camera.position.set(22, 19, 28);
+      camera.zoom = Math.min(size.width / 25, size.height / 25) * zoom;
+      camera.lookAt(0, 8, 0);
+      camera.updateProjectionMatrix();
+      return;
+    }
     time.current += delta;
     let zoomFactor = transition.current === 'city' ? 1.12 : 1;
     if (transition.current === 'zoom-out') {
@@ -411,6 +377,9 @@ function MapClickSurface({ onMoveTo }: { onMoveTo: (point: Point) => void }) {
   </mesh>;
 }
 function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { state: GameState; reduced: boolean; zoom: number; avatarId: string; cityUnlocked: boolean; onReady: () => void }) {
+  const tower = usePenthouseIsland(campGround);
+  const rented = state.decisionHistory.some(decision => decision.choice === 'rent-penthouse');
+  const [penthouseVisible, setPenthouseVisible] = useState(rented);
   useEffect(onReady, [onReady]);
   const playerPosition = useRef<Point>([...spots.player]);
   const [playerPath, setPlayerPath] = useState<Point[]>([]);
@@ -425,10 +394,16 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
   const movePlayer = useCallback((destination: Point) => setPlayerPath(findWalkPath(playerPosition.current, destination, cityVisible)), [cityVisible]);
   const trigger = `${state.month}-${state.phase}-${state.decisionHistory.length}`;
   return <>
-    <color attach="background" args={['#dceff2']} />
-    <ambientLight intensity={0.95} /><hemisphereLight args={['#eaf7ff', '#90a778', 1.15]} />
+    <color attach="background" args={['#87ceeb']} />
+    <ambientLight intensity={penthouseVisible ? 0.55 : 0.95} /><hemisphereLight args={['#eaf7ff', '#90a778', penthouseVisible ? 0.65 : 1.15]} />
     <directionalLight position={[-7, 15, 9]} intensity={2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={14} shadow-camera-bottom={-14} shadow-normalBias={0.04} shadow-radius={3} />
-    <CameraMotion trigger={trigger} reduced={reduced} zoom={zoom} cityUnlocked={cityUnlocked} onCityReveal={revealCity} /><MapClickSurface onMoveTo={movePlayer} />
+    <CameraMotion trigger={trigger} reduced={reduced} zoom={zoom} cityUnlocked={cityUnlocked} penthouseVisible={penthouseVisible} onCityReveal={revealCity} />
+    {!rented && <MapClickSurface onMoveTo={movePlayer} />}
+    <UpgradeTransition upgraded={rented} reduced={reduced} glowHeight={campGround + 0.04} name="penthouse-transformation" onSwap={setPenthouseVisible}>{showPenthouse => showPenthouse ? <group name="miami-penthouse-island">
+      <primitive object={tower} />
+      <group position={[-1.5, campGround + 0.05, 5.3]} rotation={[0, 0.3, 0]}><AnimatedAvatar avatarId={avatarId} size={2.3} walking={false} /></group>
+      <CampDog position={[0.1, campGround + 0.05, 5.3]} reduced={reduced} />
+    </group> : <group>
     {cityVisible ? <>
       <CityStreets height={campGround - 0.015} />
       {cityBuildings.map((building, index) => <Model key={`${building.name}-${index}`} name={building.name} position={[building.position[0], campGround, building.position[1]]} size={building.size} />)}
@@ -443,9 +418,11 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
       <Effects key={trigger} effects={state.effects} reduced={reduced} />
       {state.monthlyGrowth < 0 && <Storm key={trigger} state={state} reduced={reduced} />}
     </>}
-    <SkyClouds reduced={reduced} city={cityVisible} />
     <CampDog position={cityVisible ? [2.8, campGround, 5] : spots.goal} reduced={reduced} />
     <PlayerCharacter reduced={reduced} avatarId={avatarId} path={playerPath} positionRef={playerPosition} city={cityVisible} />
+    </group>}</UpgradeTransition>
+    {rented && penthouseVisible && <PenthouseFireworks reduced={reduced} />}
+    <SkyClouds reduced={reduced} city={cityVisible || penthouseVisible} />
   </>;
 }
 
@@ -455,9 +432,10 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 function TextTown({ state }: { state: GameState }) {
-  return <div className="text-town"><span className="eyebrow">Your campsite, in words</span><h3>Every choice still counts.</h3>{homeUpgradeUnlocked(state) && <p>Home upgraded: investing your raise in an ETF replaced your tent with a house.</p>}<p>The 3D campsite is unavailable. Your full game and financial results are ready to play. A dog keeps your character company outside their home.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>General savings <b>{money(state.savings)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(totalDebt(state))}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
+  return <div className="text-town"><span className="eyebrow">Your campsite, in words</span><h3>Every choice still counts.</h3>{state.decisionHistory.some(decision => decision.choice === 'rent-penthouse') && <p>Your rented Miami penthouse sits on a floating island with a rooftop pool and gardens.</p>}{homeUpgradeUnlocked(state) && <p>Home upgraded: investing your raise in an ETF replaced your tent with a house.</p>}<p>The 3D campsite is unavailable. Your full game and financial results are ready to play. A dog keeps your character company outside their home.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>General savings <b>{money(state.savings)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(totalDebt(state))}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
 }
 export default function Town({ state, reduced, zoom, avatarId, avatarName }: { state: GameState; reduced: boolean; zoom: number; avatarId: string; avatarName: string }) {
+  const rented = state.decisionHistory.some(decision => decision.choice === 'rent-penthouse');
   const [ready, setReady] = useState(false);
   const [cityUnlocked, setCityUnlocked] = useState(() => {
     if (!homeUpgradeUnlocked(state)) return false;
@@ -474,6 +452,7 @@ export default function Town({ state, reduced, zoom, avatarId, avatarName }: { s
   }, [state.cash, state.decisionHistory.length]);
   const [available] = useState(() => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } });
   const fallback = <TextTown state={state} />;
+  const sceneDescription = rented ? 'Miami island with a rented penthouse' : `${cityUnlocked ? 'City' : 'Campsite'} with ${homeUpgradeUnlocked(state) ? 'an upgraded house' : 'a tent'}`;
   if (!available) return fallback;
-  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [0, 20, 22], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} data-city-ready={ready} data-home-upgraded={homeUpgradeUnlocked(state)} aria-label={`${cityUnlocked ? 'City' : 'Campsite'} with ${homeUpgradeUnlocked(state) ? 'an upgraded house' : 'a tent'}, a dog, and ${avatarName}'s selected character`}><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} avatarId={avatarId} cityUnlocked={cityUnlocked} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Setting up your camp…</div>}</SceneBoundary>;
+  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [0, 20, 22], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} data-city-ready={ready} data-home-upgraded={homeUpgradeUnlocked(state)} data-penthouse-unlocked={rented} aria-label={`${sceneDescription}, a dog, and ${avatarName}'s selected character`}><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} avatarId={avatarId} cityUnlocked={cityUnlocked} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Setting up your camp…</div>}</SceneBoundary>;
 }

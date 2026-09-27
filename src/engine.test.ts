@@ -1,9 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { choose, choicesFor, continueGame, disabledReason, initialState, netWorth, portfolio, round, totalDebt, goalFunds, penthouseShortfall, penthouseRentalCost, homeUpgradeUnlocked } from './engine';
+import { choose, choicesFor, continueGame, disabledReason, initialState, netWorth, portfolio, round, totalDebt, goalFunds, penthouseShortfall, penthouseRentalCost, homeUpgradeUnlocked, loadStock, buyStock, stockResult, stockPerformance, exactMoney, money } from './engine';
+import { parseStockScenario, parseStockMarket } from './stockData';
+import stockFixture from '../tests/fixtures/stock-scenario.json';
 import type { GameState } from './engine';
 import { loadMarketFeed, parseMarketFeed, sampleFeed } from './market';
 import { HOLDINGS, METHODS } from './investments';
+const stockMarket = parseStockMarket(stockFixture);
+function stockStart() { return loadStock(choose(play(main.slice(0,5)), 'lower-risk'), stockMarket); }
 function check(s: GameState) {
   for (const e of s.ledger) {
     assert.equal(e.netWorth, round(1000 + e.income - e.spending - e.interest + e.marketChange), `Reconcile M${e.month}: ${e.label}`);
@@ -26,8 +30,94 @@ test('initial balances and distinct starting paths are immutable',()=>{
   const s = initialState(); assert.equal(s.cash,1000); assert.equal(s.age,18); assert.equal(s.month,1); assert.equal(netWorth(s),1000); assert.equal(totalDebt(s),0);
   const work=choose(s,'work'); const uni=choose(s,'university'); assert.equal(work.cash,1400); assert.equal(uni.cash,1100); assert.equal(uni.studentDebt,5000); assert.equal(s.cash,1000); check(work); check(uni);
 });
+
+test('all displayed amounts use explicit CAD and two decimal places', () => {
+  assert.equal(exactMoney(123.45), 'CA$123.45'); assert.equal(money(1000), 'CA$1,000.00');
+  assert.equal(exactMoney(-168), '-CA$168.00');
+});
+
+test('several stocks, repeated contributions, and historical FX reconcile to the cent', () => {
+  const loaded = stockStart(); const baseline = netWorth(loaded);
+  const first = buyStock(loaded, 1000, 'FIX');
+  const second = buyStock(first, 500, 'BETA');
+  assert.equal(second.cash, 1900); assert.equal(second.stock!.value, 1500);
+  assert.equal(second.stock!.stocks[0].units, 8); assert.equal(second.stock!.stocks[1].units, 8);
+  assert.ok(homeUpgradeUnlocked(second)); assert.deepEqual(second.holdings, loaded.holdings);
+  const review = choose(second, 'advance-stock');
+  assert.equal(review.stock!.stocks[0].value, 832); assert.equal(review.stock!.stocks[1].value, 780);
+  assert.equal(review.stock!.value, 1612);
+  assert.deepEqual(stockPerformance(review.stock!.stocks[0]), { value: 832, profit: -168, percent: -16.8 });
+  assert.equal(stockPerformance(review.stock!.stocks[1]).profit, 280);
+  assert.equal(stockPerformance(review.stock!.stocks[1]).percent.toFixed(2), '56.00');
+  assert.equal(stockPerformance(review.stock!).percent.toFixed(2), '7.47', 'overall return is weighted by contributions, not an average of percentages');
+  const added = buyStock(review, 520, 'FIX');
+  assert.equal(stockPerformance(added.stock!.stocks[0]).profit, -168, 'new contributions are not gains');
+  assert.equal(stockPerformance(added.stock!.stocks[0]).percent.toFixed(2), '-11.05');
+  const third = buyStock(added, 234, 'GAMMA');
+  assert.equal(third.stock!.point, 1, 'contributions do not advance the price date');
+  assert.equal(third.stock!.contributed, 2254);
+  const later = choose(third, 'advance-stock');
+  assert.equal(later.stock!.value, 2825); assert.equal(later.cash, 1146);
+  assert.deepEqual(later.stock!.stocks.map(h => {
+    const result = stockPerformance(h);
+    return [h.contributed, result.value, result.profit, result.percent.toFixed(2)];
+  }), [[1520, 1950, 430, '28.29'], [500, 600, 100, '20.00'], [234, 275, 41, '17.52']]);
+  assert.equal(stockPerformance(later.stock!).percent.toFixed(2), '25.33');
+  assert.equal(netWorth(later), baseline + 571);
+  assert.throws(() => choose(later, 'advance-stock'));
+  const end = choose(later, 'finish-stock');
+  assert.equal(end.phase, 'complete'); assert.match(stockResult(end), /gained CA\$571.00/);
+  assert.equal(end.rentalSpending || 0, 0);
+  for (const s of [loaded,first,second,review,added,third,later,end]) check(s);
+});
+
+test('cash-out sells every chosen stock once; rental confirmation is separate from returns', () => {
+  const start = stockStart();
+  const review = choose(buyStock(buyStock(start, 1000, 'FIX'), 500, 'BETA'), 'advance-stock');
+  const offer = choose(review, 'cash-out-stock');
+  assert.equal(offer.phase, 'penthouse'); assert.equal(offer.cash, 3512);
+  assert.equal(offer.stock!.proceeds, 1612); assert.equal(offer.stock!.value, 0);
+  assert.equal(offer.totalWithdrawn - start.totalWithdrawn, 1612);
+  assert.ok(offer.stock!.stocks.every(h => h.units === 0 && h.value === 0));
+  assert.equal(offer.totalSpending, start.totalSpending);
+  assert.ok(!offer.decisionHistory.some(d => d.choice === 'rent-penthouse'));
+  assert.throws(() => choose(offer,'cash-out-stock')); assert.throws(() => buyStock(offer,10,'FIX'));
+  const rented = choose(offer,'rent-penthouse');
+  assert.equal(rented.cash,0); assert.equal(rented.rentalSpending,3512);
+  assert.equal(rented.stock!.proceeds,1612); assert.match(stockResult(rented),/gained CA\$112.00/);
+  assert.deepEqual(stockPerformance(rented.stock!), stockPerformance(review.stock!));
+  assert.deepEqual(rented.stock!.stocks.map(stockPerformance), review.stock!.stocks.map(stockPerformance), 'selling and renting preserve each company return');
+  assert.equal(netWorth(rented),1600);
+  const declined = choose(offer,'keep-grinding'); assert.equal(declined.cash,3512);
+  for(const s of [review,offer,rented,declined]) check(s);
+});
+
+test('losses and no-cash portfolios remain playable without overspending', () => {
+  const loaded = stockStart();
+  for(const amount of [NaN,Infinity,-1,0,.001,1.001,loaded.cash+.01]) assert.throws(()=>buyStock(loaded,amount,'FIX'));
+  assert.throws(()=>buyStock(loaded,100,'UNKNOWN')); assert.equal(loaded.cash,3400);
+  const spent = buyStock(loaded,loaded.cash,'FIX');
+  assert.equal(spent.cash,0); assert.throws(()=>buyStock(spent,.01,'BETA'));
+  const review = choose(spent,'advance-stock'); assert.ok(review.stock!.value < review.stock!.contributed);
+  const sold = choose(review,'cash-out-stock'); assert.ok(sold.cash > 0); assert.match(stockResult(sold),/lost CA\$/);
+  check(spent); check(review); check(sold);
+});
+
+test('rejects missing stocks, duplicates, mismatched dates/FX, future dates and invalid prices', () => {
+  assert.throws(()=>parseStockMarket({...stockFixture,stocks:[]}));
+  assert.throws(()=>parseStockMarket({...stockFixture,stocks:[stockFixture.stocks[0]]}));
+  assert.throws(()=>parseStockMarket({...stockFixture,stocks:[stockFixture.stocks[0],stockFixture.stocks[0]]}));
+  for (const patch of [{close:0},{fx:NaN},{date:'2099-01-01'},{date:'2025-07-01'},{date:'2025-02-30'}]) {
+    const invalid=structuredClone(stockFixture.stocks[0]); Object.assign(invalid.prices[0],patch);
+    assert.throws(()=>parseStockScenario(invalid));
+  }
+  for(const patch of [{date:'2025-01-03'},{fx:1.5}]) {
+    const invalid=structuredClone(stockFixture); Object.assign(invalid.stocks[1].prices[0],patch);
+    assert.throws(()=>parseStockMarket(invalid));
+  }
+});
 test('emergency fund covers medical costs without touching savings or investments',()=>{
-  const m3=play(['work','save-emergency']); const result=choose(m3,'use-emergency'); assert.equal(result.emergencySavings,0); assert.equal(result.cash,m3.cash); assert.equal(totalDebt(result),0); assert.match(result.explanation,/covered the \$200 bill/); check(result);
+  const m3=play(['work','save-emergency']); const result=choose(m3,'use-emergency'); assert.equal(result.emergencySavings,0); assert.equal(result.cash,m3.cash); assert.equal(totalDebt(result),0); assert.match(result.explanation,/covered the CA\$200\.00 bill/); check(result);
 });
 test('empty emergency fund opens the Mom alternative without advancing time or fabricating savings',()=>{
   const m3=play(['work','skip-emergency']); const attempt=choose(m3,'use-emergency'); assert.equal(attempt.phase,'assistance'); assert.equal(attempt.month,3); assert.equal(attempt.cash,m3.cash); assert.equal(attempt.decisionHistory.length,2);
@@ -50,8 +140,8 @@ test('late account opening invests only the raise when birthday money was alread
 });
 test('gains and downturns come from holdings, before new contributions; rebalancing is not a contribution',()=>{
   const m6=play(main.slice(0,5)); assert.equal(m6.monthlyGrowth,100); assert.equal(m6.holdings.QQQ,1600); assert.equal(m6.totalContributed,1500);
-  const low=finishDecision(m6,'lower-risk'); assert.equal(low.holdings.VAB,1600); assert.equal(low.totalContributed,1500); assert.equal(low.totalWithdrawn,0); assert.equal(netWorth(low),netWorth(m6));
-  const final=continueGame(low); assert.equal(final.phase,'complete'); assert.equal(final.month,6); assert.equal(final.holdings.VAB,1600); assert.equal(final.totalIncome,low.totalIncome); assert.deepEqual(final.ledger,low.ledger); check(final);
+  const high=finishDecision(m6,'higher-risk'); assert.equal(high.holdings.QQQ,1600); assert.equal(high.totalContributed,1500); assert.equal(high.totalWithdrawn,0); assert.equal(netWorth(high),netWorth(m6));
+  const final=continueGame(high); assert.equal(final.phase,'complete'); assert.equal(final.month,6); assert.equal(final.holdings.QQQ,1600); assert.equal(final.totalIncome,high.totalIncome); assert.deepEqual(final.ledger,high.ledger); check(final);
 });
 test('penthouse shortfall uses available assets and preserves balances until an ending is chosen',()=>{
   const m6=play(main.slice(0,5)); const offer=choose(m6,'penthouse');
@@ -89,6 +179,7 @@ test('every substantive story branch reconciles to the cent and has a valid endi
     check(s);
     if(s.phase==='complete'){assert.equal(s.month,6);assert.equal(s.decisionHistory.length,6);completed++;return;}
     if(s.phase==='result'){explore(continueGame(s));return;}
+    if(s.phase==='stock-loading'){explore(buyStock(loadStock(s,parseStockMarket(stockFixture)),Math.min(100,s.cash),'FIX'));return;}
     // Account/method permutations are independently covered above; explore all money-changing choices.
     if(s.phase==='account'){explore(choose(s,'TFSA'));return;}
     if(s.phase==='method'){explore(choose(s,'one-etf'));return;}

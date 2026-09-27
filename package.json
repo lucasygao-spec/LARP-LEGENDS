@@ -7,7 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "tsx --test src/engine.test.ts",
+    "start": "node server/index.mjs",
+    "test": "tsx --test src/engine.test.ts server/stocks.test.mjs",
     "test:e2e": "playwright test",
     "demo": "node scripts/record-demo.mjs"
   },
