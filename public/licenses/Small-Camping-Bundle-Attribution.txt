@@ -1,0 +1,17 @@
+Camping models from the Small Camping Bundle by J-Toastie, via Poly Pizza.
+Bundle: https://poly.pizza/bundle/Small-Camping-Bundle-zN9HrtTray
+Creator: https://poly.pizza/u/J-Toastie
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0)
+License text: https://creativecommons.org/licenses/by/3.0/
+
+Included models used in the camp scene:
+- Island
+- Tent
+- Campfire
+- Fire
+- Tree
+- Rock
+- Log
+- Log W/ Axe
+
+The island grass and dirt colors are adjusted in the app to create a greener platform.

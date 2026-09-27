@@ -50,3 +50,14 @@
 .alert-placeholder p{font-size:14px;line-height:1.6;color:#c6e8df}
 .alert-placeholder h2{font-size:20px}
 @media(max-width:600px){.story-alert{padding:16px}.alert-panel{border-radius:20px}.alert-eyebrow{padding:20px 20px 0;font-size:10px}.alert-panel .story-card{padding:20px}.alert-panel .story-heading h1{font-size:24px}.alert-panel .story-description{font-size:15px}}
+/* Size the dashboard to its actual host (it may be embedded in a narrow IDE panel). */
+#root{width:100%;min-width:0;container-type:inline-size}
+.game-layout{width:100%;min-width:0;grid-template-columns:minmax(0,min(490px,43%)) minmax(0,1fr)}
+.decision-panel{width:100%;min-width:0}
+.profile>div:last-child{min-width:0}
+.profile h2,.profile p{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+@container (max-width:760px){
+  .game-layout{display:flex;flex-direction:column;min-height:100dvh}
+  .decision-panel{order:1;max-height:none;border-radius:27px 27px 0 0;padding:17px;gap:11px;margin-top:-22px;overflow:visible;box-shadow:0 -8px 20px #03525925}
+  .world-panel{order:0;position:relative;height:57dvh;min-height:380px;max-height:540px;width:100%}
+}
