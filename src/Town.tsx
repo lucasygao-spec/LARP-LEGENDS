@@ -203,15 +203,6 @@ function AnimatedAvatar({ avatarId, size, walking }: { avatarId: string; size: n
   }, [actions, names, walking]);
   return <group ref={root}><primitive object={object} /></group>;
 }
-function Shield({ amount, reduced }: { amount: number; reduced: boolean }) {
-  const group = useRef<Group>(null); const target = amount ? 0.82 + Math.min(amount / 1500, 1) * 0.15 : 0;
-  useFrame((_, delta) => { if (group.current) { const scale = reduced ? target : MathUtils.damp(group.current.scale.x, target, 5, delta); group.current.scale.set(scale, scale * 1.2, scale); } });
-  return <group position={spots.home} scale={tentSize / 3.2}><group ref={group} scale={0}>
-    <mesh position={[0, 0.02, 0]}><sphereGeometry args={[2.45, 40, 24, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshPhysicalMaterial color="#48ffd0" emissive="#05b79f" emissiveIntensity={0.5} transparent opacity={0.15} roughness={0.1} depthWrite={false} side={2} /></mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .04, 0]}><ringGeometry args={[2.4, 2.46, 64]} /><meshBasicMaterial color="#bcfff1" transparent opacity={0.9} /></mesh>
-    {[0,Math.PI/2].map(a=><mesh key={a} rotation={[0,a,0]}><torusGeometry args={[2.44,.017,6,60,Math.PI]} /><meshBasicMaterial color="#a3ffec" transparent opacity={0.7} /></mesh>)}
-  </group></group>;
-}
 function CampGrowthTree({ sector, value, reduced }: { sector: Sector; value: number; reduced: boolean }) {
   const group = useRef<Group>(null);
   const target = 1 + Math.min(value / 1500, 1) * 0.25;
@@ -394,7 +385,6 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
   const movePlayer = useCallback((destination: Point) => setPlayerPath(findWalkPath(playerPosition.current, destination, cityVisible)), [cityVisible]);
   const trigger = `${state.month}-${state.phase}-${state.decisionHistory.length}`;
   return <>
-    <color attach="background" args={['#87ceeb']} />
     <ambientLight intensity={penthouseVisible ? 0.55 : 0.95} /><hemisphereLight args={['#eaf7ff', '#90a778', penthouseVisible ? 0.65 : 1.15]} />
     <directionalLight position={[-7, 15, 9]} intensity={2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={14} shadow-camera-bottom={-14} shadow-normalBias={0.04} shadow-radius={3} />
     <CameraMotion trigger={trigger} reduced={reduced} zoom={zoom} cityUnlocked={cityUnlocked} penthouseVisible={penthouseVisible} onCityReveal={revealCity} />
@@ -412,7 +402,6 @@ function World({ state, reduced, zoom, avatarId, cityUnlocked, onReady }: { stat
       <CampIsland height={campGround} />
       <HomeTransformation upgraded={homeUpgradeUnlocked(state)} reduced={reduced} />
       <CampGrass />
-      <Shield amount={state.emergencySavings} reduced={reduced} />
       {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <CampGrowthTree key={sector} sector={sector} value={townSectors(state)[sector]} reduced={reduced} />)}
       {campProps.map((prop, index) => <Model key={`${prop.name}-${index}`} name={`camp/${prop.name}`} position={[prop.position[0], campGround, prop.position[1]]} size={prop.size} rotation={prop.rotation} />)}
       <Effects key={trigger} effects={state.effects} reduced={reduced} />
@@ -432,7 +421,7 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 function TextTown({ state }: { state: GameState }) {
-  return <div className="text-town"><span className="eyebrow">Your campsite, in words</span><h3>Every choice still counts.</h3>{state.decisionHistory.some(decision => decision.choice === 'rent-penthouse') && <p>Your rented Miami penthouse sits on a floating island with a rooftop pool and gardens.</p>}{homeUpgradeUnlocked(state) && <p>Home upgraded: {state.account === 'TFSA' ? 'opening your TFSA' : 'investing your raise in an ETF'} replaced your tent with a house.</p>}<p>The 3D campsite is unavailable. Your full game and financial results are ready to play. A dog keeps your character company outside their home.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>General savings <b>{money(state.savings)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(totalDebt(state))}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
+  return <div className="text-town"><span className="eyebrow">Your campsite, in words</span><h3>Every choice still counts.</h3>{state.decisionHistory.some(decision => decision.choice === 'rent-penthouse') && <p>Your rented Miami penthouse sits on a floating island with a rooftop pool and gardens.</p>}{homeUpgradeUnlocked(state) && <p>Home upgraded: {state.account === 'TFSA' ? 'opening your TFSA' : 'investing your raise in an ETF'} replaced your tent with a house.</p>}<p>The 3D campsite is unavailable. Your full game and financial results are ready to play. A dog keeps your character company outside their home.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>General savings <b>{money(state.savings)}</b></span><span>Emergency fund <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(totalDebt(state))}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
 }
 export default function Town({ state, reduced, zoom, avatarId, avatarName }: { state: GameState; reduced: boolean; zoom: number; avatarId: string; avatarName: string }) {
   const rented = state.decisionHistory.some(decision => decision.choice === 'rent-penthouse');
@@ -455,4 +444,43 @@ export default function Town({ state, reduced, zoom, avatarId, avatarName }: { s
   const sceneDescription = rented ? 'Miami island with a rented penthouse' : `${cityUnlocked ? 'City' : 'Campsite'} with ${homeUpgradeUnlocked(state) ? 'an upgraded house' : 'a tent'}`;
   if (!available) return fallback;
   return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [0, 20, 22], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} data-city-ready={ready} data-home-upgraded={homeUpgradeUnlocked(state)} data-penthouse-unlocked={rented} aria-label={`${sceneDescription}, a dog, and ${avatarName}'s selected character`}><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} avatarId={avatarId} cityUnlocked={cityUnlocked} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Setting up your camp…</div>}</SceneBoundary>;
+}
+
+// A quiet, self-contained preview for onboarding; no game state or financial effects.
+function IntroCamera() {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    camera.position.set(3, 20, 24);
+    camera.lookAt(0, 1.7, 0);
+    camera.zoom = Math.min(size.width / 19.5, size.height / 17);
+    camera.updateProjectionMatrix();
+  }, [camera, size]);
+  return null;
+}
+function IntroSceneReady({ onReady }: { onReady: () => void }) {
+  useEffect(onReady, [onReady]);
+  return null;
+}
+export function IntroCampsite() {
+  const [ready, setReady] = useState(false);
+  const markReady = useCallback(() => setReady(true), []);
+  const [available] = useState(() => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } });
+  const fallback = <img src="/images/onboarding-camp.png" alt="An orange tent, chicken character, pine trees and a campfire on a floating island" />;
+  if (!available) return fallback;
+  return <SceneBoundary fallback={fallback}><div className="intro-preview" data-ready={ready}><Canvas orthographic shadows frameloop="demand" dpr={[1, 1.5]} camera={{ position: [0, 20, 24], near: .1, far: 100, zoom: 30 }} gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true }} fallback={fallback} aria-label="An orange tent, chicken character and campfire on a green floating island">
+    <IntroCamera />
+    <ambientLight intensity={.95} /><hemisphereLight args={['#eaf7ff', '#90a778', 1.15]} />
+    <directionalLight position={[-7, 15, 9]} intensity={2} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-14} shadow-camera-right={14} shadow-camera-top={14} shadow-camera-bottom={-14} shadow-normalBias={.04} />
+    <Suspense fallback={null}>
+      <IntroSceneReady onReady={markReady} />
+      <CampIsland height={campGround} />
+      <group position={spots.home} scale={[1, .9, .7]}><Model name="camp/tent" size={tentSize} /></group>
+      <CampGrass />
+      {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <CampGrowthTree key={sector} sector={sector} value={0} reduced />)}
+      {campProps.map((prop, index) => <Model key={index} name={`camp/${prop.name}`} position={[prop.position[0], campGround, prop.position[1]]} size={prop.size} rotation={prop.rotation} />)}
+      <group position={spots.player} rotation={[0, .3, 0]}><Model name="avatars/chicken-guy" size={3.5} /></group>
+      <Model name="camp/campfire" position={spots.goal} size={2.2} />
+      <Model name="camp/fire" position={[-.8, campGround + .25, 5]} size={1.7} />
+    </Suspense>
+  </Canvas><div className="intro-preview-fallback" aria-hidden="true">{fallback}</div></div></SceneBoundary>;
 }

@@ -225,3 +225,91 @@
 .stock-attribution { display: block; margin-top: 14px; font-size: .65rem; color: var(--muted); }
 .stock-summary .ending-summary dd small { display: block; font-size: .75rem; font-weight: 400; }
 @media(prefers-reduced-motion:reduce){.choice:hover:not(:disabled){transform:none}}
+
+/* Name and experience intro, matching the supplied typing reference. */
+/* Reference onboarding: one centered prompt, then the campsite split view. */
+.intro-screen{min-height:100dvh;display:grid;place-items:center;padding:0;background:radial-gradient(ellipse at 75% 40%,#104a4d 0%,#083a3e 48%,#043035 100%);color:#d4f8ef;overflow:hidden}
+.intro-layout{position:relative;isolation:isolate;display:flex;align-items:center;width:100%;min-height:100dvh;padding:60px clamp(28px,4.3vw,88px);gap:4vw}
+.intro-layout::before{content:'';position:absolute;inset:0 0 0 56%;z-index:-1;border-left:1px solid #4ba59e16;background-image:linear-gradient(#72c7ba08 1px,transparent 1px),linear-gradient(90deg,#72c7ba08 1px,transparent 1px);background-size:160px 160px;pointer-events:none}
+.intro-chart-decoration{position:absolute;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;opacity:.18;fill:none;stroke:#39a99c;stroke-width:1.5}
+.intro-chart-decoration circle{fill:#6ed4c4;stroke:none}.intro-chart-decoration text{fill:#baf2e7;stroke:none;font:13px 'DM Sans',sans-serif}
+.intro-content{flex:none;width:53%;text-align:left;position:relative;z-index:2}
+.is-name-only{justify-content:center}.is-name-only .intro-content{width:min(880px,100%);text-align:center}
+.intro-name-block h1{font-family:'DM Sans',sans-serif;font-size:clamp(34px,4vw,78px);font-weight:750;line-height:1.15;letter-spacing:-1.6px;color:#d2f7ed;white-space:nowrap}
+.intro-input-space{width:min(100%,520px);margin-top:clamp(28px,3.5vw,58px);min-height:clamp(68px,5.3vw,100px)}
+.intro-input-shell{display:flex;align-items:center;min-height:inherit;border:1.5px solid #307d79;border-radius:17px;background:#0a41434d;transition:border-color .2s,box-shadow .2s}
+.intro-input-shell:focus-within{border-color:#4b9b92;box-shadow:0 0 0 3px #53b6a508}
+.intro-name-input{display:block;width:100%;min-width:0;padding:18px 24px;border:0;border-radius:17px;outline:none;background:transparent;color:#d9faf0;caret-color:#b7e8db;font:400 clamp(20px,1.8vw,32px)/1.4 'DM Sans',sans-serif}
+.intro-name-input::placeholder{color:#609791;opacity:.8}
+.intro-next{display:grid;place-items:center;flex:none;align-self:stretch;width:76px;border-radius:0 17px 17px 0;background:transparent;color:#7bc5b9}.intro-next:hover:not(:disabled){background:#61baa414}
+.intro-experience{overflow:hidden}
+.intro-experience h2{margin:clamp(32px,3.5vw,60px) 0 0;padding-top:clamp(30px,3.4vw,58px);border-top:1px solid #397d754d;color:#d2f7ed;font-family:'DM Sans',sans-serif;font-size:clamp(23px,2.7vw,48px);font-weight:650;line-height:1.3;letter-spacing:-.8px}
+.intro-levels{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;padding:5px;margin:clamp(24px,2.8vw,48px) -5px 0}
+.intro-levels button{min-height:80px;padding:16px 8px;border:1.5px solid #2c7570;border-radius:17px;background:#0d43443d;color:#daf5ef;font-size:clamp(14px,1.45vw,27px);font-weight:450;line-height:1.3}
+.intro-levels button:hover,.intro-levels button:focus-visible{background:#2461597a;border-color:#74c2af;transform:translateY(-2px)}
+.intro-campsite{position:absolute;left:57%;right:1%;top:10%;bottom:7%;pointer-events:none}
+.intro-campsite>div,.intro-campsite>img{width:100%;height:100%;object-fit:contain}
+.onboarding-back{display:flex;align-items:center;gap:7px;margin:0 0 20px;padding:6px 0;background:transparent;color:#a5e6d5;font-size:14px}
+.onboarding-back svg{transform:rotate(180deg)}
+.onboarding-summary{margin-top:12px;color:#c7ece1;font-size:15px;overflow-wrap:anywhere}
+.onboarding-summary span{padding:0 6px;color:#78cfbd}
+@media(max-width:760px){
+ .intro-screen{min-height:100svh;overflow:visible}
+ .intro-layout{min-height:100svh;padding:40px 24px;flex-direction:column;justify-content:center;gap:18px}
+ .intro-content,.is-name-only .intro-content{width:100%}
+ .intro-name-block h1{font-size:clamp(28px,7.6vw,48px);letter-spacing:-.9px}
+ .intro-input-space{margin-top:25px;min-height:64px}
+ .intro-name-input{font-size:21px;padding:16px}.intro-next{width:52px}
+ .intro-experience h2{font-size:27px;padding-top:24px;margin-top:26px}
+ .intro-levels{gap:8px;margin-top:22px}.intro-levels button{min-height:68px;font-size:14px;padding:12px 7px;border-radius:12px}
+ .intro-campsite{position:relative;left:auto;right:auto;top:auto;bottom:auto;flex:none;width:100%;height:290px;margin:0 -12px -20px}
+ .intro-layout::before{inset:0;background-size:90px 90px}.intro-chart-decoration{opacity:.12}
+}
+@media(max-height:650px) and (min-width:761px){.intro-layout{padding-top:30px;padding-bottom:30px}.intro-experience h2{padding-top:24px;margin-top:26px}.intro-levels{margin-top:24px}.intro-levels button{min-height:64px}}
+
+/* A quiet ambient layer keeps onboarding connected to the town's teal palette. */
+.intro-screen,.onboarding-screen{position:relative;isolation:isolate}
+.ambient-backdrop{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none;contain:strict}
+.ambient-glow{position:absolute;width:min(75vw,950px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#75d9be19 0%,#39b7a20a 38%,transparent 68%);animation:ambient-drift 24s ease-in-out infinite alternate}
+.ambient-glow-top{top:-35%;right:-24%}
+.ambient-glow-bottom{bottom:-55%;left:-25%;animation-delay:-12s;animation-direction:alternate-reverse}
+.ambient-grid{position:absolute;inset:0;opacity:.055;background-image:linear-gradient(#b9e9df 1px,transparent 1px),linear-gradient(90deg,#b9e9df 1px,transparent 1px);background-size:64px 64px;mask-image:radial-gradient(ellipse at 100% 0%,#000,transparent 58%)}
+@keyframes ambient-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-5%,9%,0)}}
+.ambient-backdrop[data-still=true] .ambient-glow{animation:none}
+.intro-levels button{transition:background .2s,border-color .2s,color .2s,transform .2s,box-shadow .2s}
+.intro-levels button:hover,.intro-levels button:focus-visible{box-shadow:0 6px 24px #061f2926}
+.avatar-option{transition:border-color .2s,background .2s,box-shadow .2s}
+.avatar-option:hover{border-color:#94decc;box-shadow:inset 0 0 0 1px #94decc55}
+.choice>svg:last-child,.primary-button>svg:last-child{transition:transform .18s}
+.choice:hover:not(:disabled)>svg:last-child,.primary-button:hover:not(:disabled)>svg:last-child{transform:translateX(2px)}
+[data-reduced-motion=true] *,[data-reduced-motion=true] *::before,[data-reduced-motion=true] *::after{animation:none!important;transition:none!important}
+[data-reduced-motion=true] .choice:hover:not(:disabled),[data-reduced-motion=true] .choice:hover:not(:disabled)>svg:last-child,[data-reduced-motion=true] .primary-button:hover:not(:disabled)>svg:last-child{transform:none}
+
+/* Real monthly snapshots, with one focused readout rather than floating tooltips. */
+.growth-readout{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px;min-height:47px;font-size:12px;color:#527778;font-variant-numeric:tabular-nums}
+.growth-readout strong{text-align:right;font-size:clamp(19px,1.8vw,28px);font-weight:650;letter-spacing:-.7px;color:#155d58;overflow-wrap:anywhere}
+.growth-readout small{display:block;margin-top:3px;font-size:10px;font-weight:400;letter-spacing:0;color:#547979}
+.growth-gridline{stroke:#badad9;stroke-dasharray:2 6;opacity:.65}
+.growth-crosshair{stroke:#438a80;stroke-width:1;stroke-dasharray:3 5;opacity:.6;pointer-events:none}
+.growth-halo{fill:#00ac911a;stroke:#00ac9133;stroke-width:1;pointer-events:none}
+.portfolio-point{stroke:#f0fffa;stroke-width:2;cursor:crosshair}
+.portfolio-point:focus-visible{outline:2px solid #176e68;outline-offset:4px}
+@media(max-width:760px){.ambient-grid{background-size:48px 48px}.ambient-glow{width:120vw}.growth-readout strong{font-size:24px}}
+
+/* Keep the ambient treatment visible during play, behind the transparent town canvas. */
+.world-panel{background:linear-gradient(160deg,#d7f3ee 0%,#a9e2ea 42%,#79c9df 75%,#58b9d0 100%)}
+.world-panel>.ambient-sky{z-index:0;background:radial-gradient(ellipse at 18% 15%,#fffef5b3,transparent 58%)}
+.ambient-sky .ambient-glow{width:110%;background:radial-gradient(circle,#e6fff9a6 0%,#bbf6ef4d 38%,transparent 68%);animation-duration:16s}
+.ambient-sky .ambient-glow-top{top:-25%;right:-30%}
+.ambient-sky .ambient-glow-bottom{bottom:-48%;left:-30%;background:radial-gradient(circle,#81d6d999 0%,#b4edea4d 38%,transparent 68%)}
+.world-view{z-index:1}
+.simulation-note{z-index:2;pointer-events:none}
+.intro-content{min-width:0}
+.is-name-only .intro-content{padding-bottom:44px;border-bottom:1px solid #397d754d}
+.intro-levels button:focus-visible{outline:2px solid #94d9c8;outline-offset:3px}
+
+.is-name-only .intro-input-space{margin-left:auto;margin-right:auto}
+.intro-preview{position:relative}
+.intro-preview-fallback{position:absolute;inset:0;opacity:1;transition:opacity .4s ease;pointer-events:none}
+.intro-preview-fallback img{width:100%;height:100%;object-fit:contain}
+.intro-preview[data-ready=true] .intro-preview-fallback{opacity:0}

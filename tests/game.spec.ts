@@ -4,8 +4,9 @@ import stockFixture from './fixtures/stock-scenario.json' with { type: 'json' };
 async function start(page: Page) {
   await page.goto('/');
   await page.getByLabel('Your name',{exact:true}).fill('Maya');
+  await page.getByLabel('Your name',{exact:true}).press('Enter');
+  await page.getByRole('button',{name:'Money Rookie',exact:true}).click();
   await page.getByRole('radio',{name:'Generic Female',exact:true}).click();
-  await page.getByRole('radio',{name:/Level 1/}).click();
   await page.getByRole('button',{name:'Start',exact:true}).click();
   await expect(page.getByRole('heading',{name:'You’re 18. What’s next?'})).toBeVisible();
 }
@@ -165,6 +166,19 @@ test('results dashboard opens from the final breakdown and preserves chart data 
   await expect(summary.locator('.investment-chart > svg')).toHaveAttribute('aria-label','Portfolio value CA$1,600.00; net contributions CA$1,500.00');
   await expect(summary.locator('.growth-market-change')).toContainText('+CA$100.00');
   await expect(summary.locator('.portfolio-point')).toHaveCount(7);
+  const readout = summary.locator('.growth-readout');
+  await expect(readout).toContainText('Month 6');
+  await expect(readout).toContainText('CA$1,600.00');
+  await summary.locator('.portfolio-point').first().focus();
+  await expect(readout).toContainText('Starting point');
+  await expect(readout).toContainText('CA$0.00');
+  await page.keyboard.press('Tab');
+  await expect(readout).toContainText('Month 1');
+  await summary.locator('.portfolio-point').last().hover();
+  await expect(readout).toContainText('Month 6');
+  await expect(readout).toContainText('CA$1,600.00');
+  await page.getByRole('heading',{name:'Portfolio Growth',exact:true}).click();
+  await expect(readout).toContainText('Latest snapshot');
   await expect(summary).toContainText('QQQ');
   const chart=await summary.locator('.investment-chart').boundingBox();
   const feedback=await summary.locator('.monthly-summary').boundingBox();
