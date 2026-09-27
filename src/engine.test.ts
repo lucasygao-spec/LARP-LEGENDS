@@ -1,81 +1,132 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { choose, choicesFor, continueGame, disabledReason, initialState, netWorth, portfolio, round } from './engine';
+import { choose, choicesFor, continueGame, disabledReason, initialState, netWorth, portfolio, round, totalDebt, goalFunds, penthouseShortfall, penthouseRentalCost, homeUpgradeUnlocked } from './engine';
 import type { GameState } from './engine';
 import { loadMarketFeed, parseMarketFeed, sampleFeed } from './market';
+import { HOLDINGS, METHODS } from './investments';
 function check(s: GameState) {
   for (const e of s.ledger) {
-    assert.equal(e.netWorth, round(1000 + e.income - e.spending - e.interest + e.marketChange), `Reconcile ${e.month}: ${e.label}`);
-    assert.equal(e.netWorth, round(e.cash + e.emergencySavings + e.investments - e.debt));
+    assert.equal(e.netWorth, round(1000 + e.income - e.spending - e.interest + e.marketChange), `Reconcile M${e.month}: ${e.label}`);
+    assert.equal(e.netWorth, round(e.cash + e.savings + e.emergencySavings + e.investments - e.debt));
     assert.equal(e.investments, round(e.contributed + e.marketChange - e.withdrawn));
-    for (const value of [e.cash, e.emergencySavings, e.investments, e.debt]) assert.ok(Number.isFinite(value) && value >= 0);
+    for (const value of [e.cash,e.savings,e.emergencySavings,e.debt,e.investments]) assert.ok(Number.isFinite(value) && value >= 0);
   }
+  assert.equal(portfolio(s), round(s.totalContributed + s.totalMarketChange - s.totalWithdrawn));
 }
-function decide(s: GameState, id: string, account = 'TFSA') { let next = choose(s, id); if (next.phase === 'account') next = choose(next, account); check(next); return next; }
-function play(ids: string[]) { return ids.reduce((s, id) => continueGame(decide(s, id)), initialState()); }
-test('starts at age 18 with exactly $1,000 and nothing else', () => {
-  const s = initialState(); assert.equal(s.month, 1); assert.equal(s.age, 18); assert.equal(s.cash, 1000); assert.equal(netWorth(s), 1000); assert.equal(portfolio(s), 0); assert.equal(s.debt, 0); assert.equal(s.emergencySavings, 0); assert.equal(s.goal, null); check(s);
+function finishDecision(s: GameState, id: string, account = 'TFSA', fund = 'QQQ') {
+  let next = choose(s,id);
+  if(next.phase === 'assistance') next = choose(next,'ask-mom');
+  if(next.phase === 'account') next = choose(next,account);
+  if(next.phase === 'fund') next = choose(next,fund);
+  check(next); return next;
+}
+function play(ids: string[]) { return ids.reduce((s,id)=>continueGame(finishDecision(s,id)), initialState()); }
+const main = ['work','skip-emergency','use-emergency','open','one-etf','higher-risk'];
+test('initial balances and distinct starting paths are immutable',()=>{
+  const s = initialState(); assert.equal(s.cash,1000); assert.equal(s.age,18); assert.equal(s.month,1); assert.equal(netWorth(s),1000); assert.equal(totalDebt(s),0);
+  const work=choose(s,'work'); const uni=choose(s,'university'); assert.equal(work.cash,1400); assert.equal(uni.cash,1100); assert.equal(uni.studentDebt,5000); assert.equal(s.cash,1000); check(work); check(uni);
 });
-test('paths set simple budgets and university debt funds tuition, not cash', () => {
-  const s = initialState(); const work = choose(s, 'work'); const uni = choose(s, 'university'); const gap = choose(s, 'gap');
-  assert.equal(work.cash, 1400); assert.equal(uni.cash, 1100); assert.equal(uni.debt, 5000); assert.equal(gap.cash, 900); assert.equal(s.cash, 1000); [work, uni, gap].forEach(check);
+test('emergency fund covers medical costs without touching savings or investments',()=>{
+  const m3=play(['work','save-emergency']); const result=choose(m3,'use-emergency'); assert.equal(result.emergencySavings,0); assert.equal(result.cash,m3.cash); assert.equal(totalDebt(result),0); assert.match(result.explanation,/covered the \$200 bill/); check(result);
 });
-test('account selection is the same month and gift is credited only once', () => {
-  const m2 = play(['work']); assert.equal(m2.month, 2); assert.equal(m2.cash, 2800);
-  for (const account of ['TFSA', 'FHSA', 'RRSP']) { const opening = choose(m2, 'open'); assert.equal(opening.phase, 'account'); assert.equal(opening.cash, 2800); const result = choose(opening, account); assert.equal(result.account, account); assert.equal(result.month, 2); assert.equal(result.cash, 2800); assert.equal(result.decisionHistory.length, 2); assert.throws(() => choose(result, account)); check(result); }
+test('empty emergency fund opens the Mom alternative without advancing time or fabricating savings',()=>{
+  const m3=play(['work','skip-emergency']); const attempt=choose(m3,'use-emergency'); assert.equal(attempt.phase,'assistance'); assert.equal(attempt.month,3); assert.equal(attempt.cash,m3.cash); assert.equal(attempt.decisionHistory.length,2);
+  const result=choose(attempt,'ask-mom'); assert.equal(result.emergencySavings,0); assert.equal(result.totalIncome,m3.totalIncome+200); assert.equal(result.totalSpending,m3.totalSpending+200); assert.equal(netWorth(result),netWorth(m3)); check(result);
 });
-test('investing deducts cash and applies next-month return before new contributions', () => {
-  const m3 = play(['work', 'open']); const invested = decide(m3, 'etf'); assert.equal(portfolio(invested), 1000); assert.equal(invested.cash, m3.cash - 1000);
-  const m4 = continueGame(invested); assert.equal(portfolio(m4), 1021); assert.equal(m4.monthlyGrowth, 21);
-  const m5 = continueGame(decide(m4, 'emergency')); assert.equal(portfolio(m5), 975.06); assert.ok(m5.effects.some(e => e.kind === 'market' && e.amount < 0)); check(m5);
+test('birthday gift arrives once; all account substeps stay in the same month',()=>{
+  const m4=play(['work','save-emergency','use-emergency']);
+  for(const account of ['TFSA','RRSP','FHSA']) { const pending=choose(m4,'open'); const opened=choose(pending,account); assert.equal(opened.month,4); assert.equal(opened.cash,m4.cash); assert.equal(opened.account,account); assert.equal(opened.reservedGift,1000); assert.throws(()=>choose(opened,account)); check(opened); }
+  const saved=choose(m4,'birthday-savings'); assert.equal(saved.savings,1000); assert.equal(saved.emergencySavings,0); assert.equal(saved.cash,m4.cash-1000); check(saved);
+  const biz=choose(m4,'biztech'); assert.equal(biz.holdings.BIZTECH,1000); assert.equal(biz.cash,m4.cash-1000); assert.equal(biz.account,null); check(biz);
 });
-test('spending the gift still permits a valid smaller investment', () => {
-  const m3 = play(['gap', 'spend']); assert.equal(m3.cash, 700); const invested = decide(m3, 'stocks'); assert.equal(portfolio(invested), 700); assert.equal(invested.cash, 0); check(invested);
-});
-test('repair uses savings then cash and never sells when liquid funds cover it', () => {
-  const m5 = play(['work', 'open', 'etf', 'emergency']); const repaired = decide(m5, 'repair'); assert.equal(repaired.cash, m5.cash - 200); assert.equal(repaired.emergencySavings, 0); assert.equal(portfolio(repaired), portfolio(m5)); assert.match(repaired.explanation, /\$500.*\$200 cash/); check(repaired);
-  const funded = play(['work', 'save', 'cash', 'emergency']); const covered = decide(funded, 'repair'); assert.equal(covered.cash, funded.cash); assert.equal(covered.emergencySavings, 800); assert.match(covered.explanation, /emergency fund covered/);
-});
-test('shortfall explicitly requires borrowing or selling only the amount needed', () => {
-  const m5 = play(['gap', 'spend', 'stocks', 'invest']); assert.deepEqual(choicesFor(m5).map(c => c.id), ['borrow', 'sell']); assert.equal(m5.cash, 0);
-  const borrowed = decide(m5, 'borrow'); const sold = decide(m5, 'sell'); assert.equal(borrowed.debt, round(m5.debt + 700)); assert.equal(portfolio(borrowed), portfolio(m5)); assert.equal(sold.debt, m5.debt); assert.equal(sold.totalWithdrawn, 700); assert.equal(portfolio(sold), round(portfolio(m5) - 700)); assert.equal(sold.cash, 0); check(borrowed); check(sold);
-});
-test('raise contributes exactly six times, with market applied before each deposit', () => {
-  let s = play(['work', 'open', 'etf', 'emergency', 'repair', 'auto-invest']); assert.equal(s.month, 7); assert.equal(s.monthlyContribution, 100);
-  let expected = portfolio(play(['work', 'open', 'etf', 'emergency', 'repair']));
-  for (let m = 7; m <= 12; m++) expected = round(round(expected * (1 + sampleFeed.months[m - 1].etf)) + 100);
-  while (s.month < 12) s = continueGame(decide(s, 'advance'));
-  assert.equal(s.totalContributed, 1600); assert.equal(portfolio(s), expected); check(s);
-  s = continueGame(decide(s, 'advance')); assert.equal(s.phase, 'goal'); s = choose(s, 'home'); assert.equal(s.phase, 'complete'); assert.equal(s.month, 12); assert.equal(s.goal, 'home'); assert.equal(s.decisionHistory.length, 13); check(s);
-});
-test('unused recurring debt payment stays in cash and no debt becomes negative', () => {
-  let s = play(['university', 'save', 'cash', 'pay', 'repair']); s.debt = 20; // isolate a final small balance
-  s = continueGame(choose(s, 'auto-debt')); assert.equal(s.debt, 0); assert.equal(s.monthlyContribution, 0); assert.ok(s.cash > 0);
-});
-test('every valid story branch reconciles and repeats deterministically', () => {
-  let completed = 0;
-  function explore(s: GameState) {
-    check(s);
-    if (s.phase === 'complete') { completed++; return; }
-    if (s.phase === 'result') { explore(continueGame(s)); return; }
-    // Account effects are identical; each account separately covered above.
-    if (s.phase === 'account') { explore(choose(s, 'TFSA')); return; }
-    for (const c of choicesFor(s)) if (!disabledReason(s, c.id)) explore(choose(s, c.id));
+test('all four methods lead to a funded ETF without duplicate gift or raise deposits',()=>{
+  const m5=play(['work','skip-emergency','ask-mom','open']);
+  for(const method of METHODS) for(const fund of ['VAB','XUS','QQQ']) {
+    const result=finishDecision(m5,method.id,'TFSA',fund); assert.equal(result.month,5); assert.equal(result.holdings[fund as 'QQQ'],1250); assert.equal(result.cash,m5.cash-1250); assert.equal(result.method,method.id); assert.equal(result.totalContributed,1250); assert.equal(result.decisionHistory.length,5); check(result);
   }
-  explore(initialState()); assert.ok(completed > 200);
-  assert.deepEqual(play(['work', 'open', 'etf']), play(['work', 'open', 'etf']));
 });
-test('invalid, repeat, unaffordable, and no-debt actions cannot mutate state', () => {
-  const s = initialState(); assert.throws(() => choose(s, 'unknown')); assert.throws(() => continueGame(s)); assert.throws(() => choose(choose(s, 'work'), 'work'));
-  const m4 = play(['work', 'open', 'etf']); assert.ok(disabledReason(m4, 'pay')); assert.throws(() => choose({...m4, cash: 0}, 'invest')); assert.equal(s.cash, 1000);
+test('late account opening invests only the raise when birthday money was already allocated',()=>{
+  const m5=play(['work','save-emergency','use-emergency','biztech']); const result=finishDecision(m5,'advisor','FHSA','XUS'); assert.equal(result.account,'FHSA'); assert.equal(result.holdings.XUS,250); assert.equal(result.totalContributed,1250); check(result);
 });
-test('API monthly data drives valuations and remains frozen for a run', async () => {
-  const raw = { label: 'Test historical feed', asOf: '2025-12-31', months: sampleFeed.months.map(m => ({ ...m, etf: -0.1 })) };
-  const feed = await loadMarketFeed('/api/market', (async () => new Response(JSON.stringify(raw))) as typeof fetch); assert.equal(feed.source, 'api');
-  let s = initialState(feed); for (const id of ['work', 'open', 'etf']) s = continueGame(decide(s, id)); assert.equal(portfolio(s), 900); raw.months[3].etf = 1; assert.equal(s.market.months[3].etf, -0.1);
-  assert.throws(() => parseMarketFeed({...raw, months: []})); assert.throws(() => parseMarketFeed({...raw, months: raw.months.map(m => ({...m, etf: NaN}))}));
+test('gains and downturns come from holdings, before new contributions; rebalancing is not a contribution',()=>{
+  const m6=play(main.slice(0,5)); assert.equal(m6.monthlyGrowth,100); assert.equal(m6.holdings.QQQ,1600); assert.equal(m6.totalContributed,1500);
+  const low=finishDecision(m6,'lower-risk'); assert.equal(low.holdings.VAB,1600); assert.equal(low.totalContributed,1500); assert.equal(low.totalWithdrawn,0); assert.equal(netWorth(low),netWorth(m6));
+  const final=continueGame(low); assert.equal(final.phase,'complete'); assert.equal(final.month,6); assert.equal(final.holdings.VAB,1600); assert.equal(final.totalIncome,low.totalIncome); assert.deepEqual(final.ledger,low.ledger); check(final);
 });
-test('API failures visibly fall back, never masquerading as live data', async () => {
-  for (const fetcher of [async () => { throw new Error('offline'); }, async () => new Response('{}'), async () => new Response('', {status: 503})]) { const feed = await loadMarketFeed('/api/market', fetcher as typeof fetch); assert.equal(feed.source, 'sample'); assert.match(feed.notice, /unavailable or invalid/); }
-  assert.equal((await loadMarketFeed()).source, 'sample');
+test('penthouse shortfall uses available assets and preserves balances until an ending is chosen',()=>{
+  const m6=play(main.slice(0,5)); const offer=choose(m6,'penthouse');
+  assert.equal(offer.phase,'penthouse'); assert.equal(offer.goal,'miami'); assert.equal(offer.month,6);
+  assert.equal(goalFunds(offer),5000); assert.equal(penthouseShortfall(offer),995000);
+  assert.equal(portfolio(offer),1600); assert.equal(netWorth(offer),netWorth(m6));
+  assert.equal(offer.decisionHistory.length,5); assert.deepEqual(offer.ledger,m6.ledger);
+  assert.throws(()=>continueGame(offer)); assert.throws(()=>choose(offer,'penthouse')); check(offer);
+});
+test('rental ending charges once, invents no course income, and completes without another month',()=>{
+  const offer=choose(play(main.slice(0,5)),'penthouse'); const end=choose(offer,'rent-penthouse');
+  assert.equal(end.phase,'complete'); assert.equal(end.month,6); assert.equal(end.decisionHistory.length,6);
+  assert.equal(end.cash,0); assert.equal(end.totalSpending,offer.totalSpending+penthouseRentalCost(offer));
+  assert.equal(end.totalIncome,offer.totalIncome); assert.equal(netWorth(end),netWorth(offer)-offer.cash);
+  assert.deepEqual(end.holdings,offer.holdings); assert.equal(penthouseShortfall(end),998400);
+  assert.throws(()=>choose(end,'rent-penthouse')); assert.throws(()=>continueGame(end)); check(end);
+});
+test('keep grinding preserves money and recurring investing in the final summary',()=>{
+  const offer=choose(play(main.slice(0,5)),'penthouse'); const end=choose(offer,'keep-grinding');
+  assert.equal(end.phase,'complete'); assert.equal(end.month,6); assert.equal(end.decisionHistory.length,6);
+  assert.equal(end.cash,offer.cash); assert.equal(netWorth(end),netWorth(offer)); assert.equal(end.recurring,'invest');
+  assert.equal(end.totalIncome,offer.totalIncome); assert.deepEqual(end.holdings,offer.holdings); check(end);
+});
+test('rental price matches cash without spending savings or selling investments',()=>{
+  const offer=choose(play(['work','save-emergency','use-emergency','birthday-savings','one-etf']),'penthouse');
+  const lowCash={...offer,cash:100}; const rented=choose(lowCash,'rent-penthouse');
+  assert.equal(rented.cash,0); assert.equal(rented.savings,offer.savings); assert.equal(rented.emergencySavings,offer.emergencySavings);
+  const broke={...offer,cash:0,savings:0,emergencySavings:1000};
+  assert.ok(disabledReason(broke,'rent-penthouse')); assert.throws(()=>choose(broke,'rent-penthouse'));
+  assert.equal(disabledReason(broke,'keep-grinding'),null);
+});
+test('every substantive story branch reconciles to the cent and has a valid ending',()=>{
+  let completed=0;
+  function explore(s:GameState) {
+    check(s);
+    if(s.phase==='complete'){assert.equal(s.month,6);assert.equal(s.decisionHistory.length,6);completed++;return;}
+    if(s.phase==='result'){explore(continueGame(s));return;}
+    // Account/method permutations are independently covered above; explore all money-changing choices.
+    if(s.phase==='account'){explore(choose(s,'TFSA'));return;}
+    if(s.phase==='method'){explore(choose(s,'one-etf'));return;}
+    for(const c of choicesFor(s)) if(!disabledReason(s,c.id)) explore(choose(s,c.id));
+  }
+  explore(initialState()); assert.ok(completed>=100); assert.deepEqual(play(main),play(main));
+});
+test('invalid, repeated, and unaffordable actions cannot mutate balances',()=>{
+  const s=initialState(); assert.throws(()=>choose(s,'unknown')); assert.throws(()=>continueGame(s)); assert.throws(()=>choose(choose(s,'work'),'work'));
+  const m2=play(['work']); assert.throws(()=>choose({...m2,cash:0},'save-emergency')); assert.equal(s.cash,1000);
+});
+test('each real ETF has its own API return and BizTech remains simulated',async()=>{
+  const raw={label:'Test historical ETF feed',asOf:'2025-12-31',months:sampleFeed.months.map(m=>({...m,VAB:.01,XUS:.02,QQQ:-.1,BIZTECH:9}))};
+  const feed=await loadMarketFeed('/api/market',(async()=>new Response(JSON.stringify(raw))) as typeof fetch); assert.equal(feed.source,'api'); assert.equal(feed.months[5].BIZTECH,sampleFeed.months[5].BIZTECH);
+  let s=initialState(feed); for(const id of main.slice(0,5)) s=continueGame(finishDecision(s,id)); assert.equal(s.monthlyGrowth,-125); assert.equal(s.holdings.QQQ,1375); raw.months[5].QQQ=1; assert.equal(s.market.months[5].QQQ,-.1); check(s);
+  for(const symbol of HOLDINGS.filter(s=>s!=='BIZTECH')) assert.throws(()=>parseMarketFeed({...raw,months:raw.months.map(m=>({...m,[symbol]:NaN}))}));
+  assert.throws(()=>parseMarketFeed({...raw,months:[]}));
+});
+test('API failures fall back to visibly labelled samples',async()=>{
+  for(const fetcher of [async()=>{throw new Error('offline');},async()=>new Response('{}'),async()=>new Response('',{status:503})]) {const feed=await loadMarketFeed('/api/market',fetcher as typeof fetch);assert.equal(feed.source,'sample');assert.match(feed.notice,/unavailable or invalid/);}
+  assert.equal((await loadMarketFeed()).source,'sample');
+});
+
+test('home upgrades only after the raise is invested in an ETF and resets on replay', () => {
+  const before = play(['work', 'skip-emergency', 'ask-mom', 'biztech']);
+  assert.equal(homeUpgradeUnlocked(before), false, 'birthday stock purchase does not unlock the house');
+  const method = choose(before, 'one-etf');
+  const account = choose(method, 'TFSA');
+  assert.equal(homeUpgradeUnlocked(method), false);
+  assert.equal(homeUpgradeUnlocked(account), false, 'opening an account is not an ETF investment');
+  for (const fund of ['VAB', 'XUS', 'QQQ']) {
+    const invested = choose(account, fund);
+    assert.equal(homeUpgradeUnlocked(invested), true);
+    assert.equal(invested.cash, account.cash - 250, 'the home reward charges no additional money');
+    check(invested);
+    const final = choose(choose(continueGame(invested), 'penthouse'), 'rent-penthouse');
+    assert.equal(final.cash, 0);
+    assert.equal(homeUpgradeUnlocked(final), true, 'the upgrade survives spending the remaining cash');
+  }
+  assert.equal(homeUpgradeUnlocked(initialState()), false);
 });

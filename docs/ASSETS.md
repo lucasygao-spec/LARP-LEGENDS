@@ -1,27 +1,28 @@
 # Asset credits
 
-Models and interface sounds are Kenney CC0 assets. Original license texts are preserved in `public/licenses/`.
-
-| Pack | Selected models / use |
+| Pack | Selected models and use |
 | --- | --- |
-| [City Kit: Suburban](https://kenney.nl/assets/city-kit-suburban) | building-type-a → player home |
-| [City Kit: Commercial](https://kenney.nl/assets/city-kit-commercial) | building-c → bank; building-skyscraper-a → technology; building-f → retail; building-b → financial goal; building-a → home; building-n → apartments; building-skyscraper-b → office; building-j → shops |
-| [City Kit: Industrial](https://kenney.nl/assets/city-kit-industrial) | building-a → energy factory; solar-panel-landscape-group → solar field |
-| [City Kit: Roads](https://kenney.nl/assets/city-kit-roads) | road-straight and road-crossroad, reused |
-| [Blocky Characters](https://kenney.nl/assets/blocky-characters) | character-f → original Maya model, retained as a bundled fallback |
-| [CUTES Part One](https://poly.pizza/bundle/CUTES-Part-One-WD91WrT0gx) by J-Toastie | Santa Claus, Food Worker, Generic Male, Generic Female, Citizens 1–3, Male Officer, Female Officer, Crypto Bro, Prisoner, Retail Worker, and Chicken Guy → player avatar choices; CC-BY 3.0; credited in `public/licenses/CUTES-Part-One-Attribution.txt` |
-| [Nature Kit](https://kenney.nl/assets/nature-kit) | tree_oak, tree_pineRoundA, tree_default, rock_smallA, reused |
+| [City Kit: Suburban](https://kenney.nl/assets/city-kit-suburban) | Earlier town assets retained in the asset folder |
+| [City Kit: Commercial](https://kenney.nl/assets/city-kit-commercial) | Earlier town buildings retained in the asset folder |
+| [City Kit: Industrial](https://kenney.nl/assets/city-kit-industrial) | Earlier energy assets retained in the asset folder |
+| [City Kit: Roads](https://kenney.nl/assets/city-kit-roads) | Earlier road assets retained in the asset folder |
+| [City Kit](https://poly.pizza/bundle/City-Kit-0CkvGrBJ0u) by Kenney | City buildings and streets; Public Domain (CC0) |
+| [Apartment building](https://poly.pizza/m/01lqee-dZAr) by Poly by Google | Centerpiece labeled Home; CC BY 3.0; credited in `public/licenses/Apartment-Building-Attribution.txt` |
+| [Blocky Characters](https://kenney.nl/assets/blocky-characters) | Original Maya fallback model |
+| [CUTES Part One](https://poly.pizza/bundle/CUTES-Part-One-WD91WrT0gx) by J-Toastie | Player avatar choices; CC BY 3.0; credited in `public/licenses/CUTES-Part-One-Attribution.txt` |
+| [Small Camping Bundle](https://poly.pizza/bundle/Small-Camping-Bundle-zN9HrtTray) by J-Toastie | Island, tent, campfire, fire, tree, rock, log, and log with axe; CC BY 3.0; credited in `public/licenses/Small-Camping-Bundle-Attribution.txt` |
+| [Nature Kit](https://kenney.nl/assets/nature-kit) | Earlier nature assets retained in the asset folder |
 | [Interface Sounds](https://kenney.nl/assets/interface-sounds) | click_001, confirmation_001, error_001, back_001 |
 
-Model files are normalized and positioned at runtime. External texture references are renamed by pack, preserving each pack's original texture. The selected CUTES character is loaded in the same town marker and previewed from its matching model thumbnail.
+The city unlocks when the player's cash first reaches $5,000. A zoom-out and zoom-in transition replaces the camp with a small city on a green platform. The city uses City Kit buildings and streets, with the selected Apartment building model labeled Home in its center. The player's avatar transfers into the city and keeps the same idle and walking animations; click-to-move routes follow its straight streets and avoid buildings.
 
-The current scene uses the Commercial pack for all city buildings, including the bank, home, investment districts, and goal building. Shared models reuse their original texture atlas. Custom geometry supplies a flat city base, sidewalks, road markings, crosswalks, a small park, sparse trees, cars, and streetlights. Floating labels and HTML building signs are removed. The financial dashboard and text fallback retain the explanations. Earlier unused island and suburban GLB assets remain in the asset folder but are not loaded by the scene.
+Before the $5,000 unlock, the scene uses the Small Camping Bundle to build a green floating island campsite with a tent, fire, logs, rocks, trees, and straight dirt walkways. Click-to-move paths follow the visible walkways and avoid camp props.
 
-Custom financial effects: emergency dome, coin trails, debt drain, and storm lightning. The sidebar portrait uses the selected CUTES model's local preview image.
+The selected CUTES avatar appears in the campsite and in its matching sidebar portrait. Model files are normalized and positioned at runtime.
 
-DM Sans and Manrope are bundled from the Google Fonts repository under the SIL Open Font License; the license files ship alongside asset licenses.
+DM Sans and Manrope are bundled from the Google Fonts repository under the SIL Open Font License; license files ship alongside asset licenses.
 
-Icons: Lucide, ISC license (package license in node_modules/lucide-react/LICENSE).
+Icons: Lucide, ISC license (package license in `node_modules/lucide-react/LICENSE`).
 
 Animation reference: https://motion.dev/docs/react-animation
 

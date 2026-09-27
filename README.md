@@ -1,6 +1,6 @@
-# Investly — Your first investing journey
+# Investly — Live pitch demo
 
-A short financial learning demo following your player-created character through twelve months. Keep the financial decisions on the left and watch the balances change a miniature 3D town on the right.
+A short financial story starting at age 18, with avatar setup and a Kenney commercial city that reflects your choices.
 
 ## Run
 
@@ -11,60 +11,60 @@ npm install
 npm run dev
 ```
 
-`npm run build` produces `dist`; `npm run preview` serves it. No real accounts or trades are created.
+`npm run build` produces `dist`. `npm run preview` serves it. All transactions and accounts are simulated.
 
-On first launch, enter a name, choose a person character, and select your money experience level. The same selected model appears in the 3D town and the profile portrait. Your choices are saved in this browser.
+## Pitch sequence
 
-## Journey
+1. **Uni or Start working.** The work path lands a BizTech mascot job, salary $30,000/year.
+2. **Emergency cushion.** Set aside $200 from pay, or keep it in cash.
+3. **Frat flu alert.** A centered panel over a full-screen backdrop presents a $200 medical bill uses the emergency fund or a gift from Mom. Trying an empty fund opens the call-Mom alternative without advancing time.
+4. **Birthday.** Receive $1,000: open TFSA/RRSP/FHSA, buy BizTech, or put it in general savings.
+5. **Raise.** An extra $250/month leads directly to managed app, advisor, brokerage, or one ETF. Open an account if needed, then choose VAB/XUS/QQQ with Learn More buttons.
+6. **Market result.** See a gain or loss, then choose a Miami penthouse goal, higher-risk QQQ, or lower-risk VAB. The Miami path shows your available cash, general savings, and investments against a $1,000,000 price, then offers a one-day penthouse rental priced at your available cash to film a course or “Keep grinding.” Both go straight to a Month 6 summary; renting spends the cash balance, while grinding preserves balances. Replay and compare.
 
-1. University, work, or a gap year changes your monthly budget.
-2. Receive a $1,000 gift; invest, save, or spend. Investing opens a simulated TFSA, FHSA, or RRSP, with CRA Learn More links.
-3. Buy a diversified ETF (recommended demo route), a fictional individual stock, or hold cash.
-4. Allocate an extra $500 to investing, an emergency fund, or debt.
-5. Cover a $700 repair using emergency savings, then cash. Explicitly borrow or sell investments if still short.
-6. Assign a $100 monthly raise to ETF contributions, savings, debt, or a split.
-7. Advance months 7–12 with monthly market changes and six recurring contributions.
-8. Choose a First Home ($40,000), Car ($12,000), or Puppy ($2,500) goal and see portfolio progress.
+The screenshot’s checkmarks/strikethroughs are interpreted as a sample route, not removed choices. A 10% raise on $30,000/year is $3,000/year or $250/month; the screenshot’s “$250 each year” is corrected to monthly. University stays playable with simplified part-time income. Investment methods converge to keep the pitch short.
 
-Account selection is a substep, not another month. Balances and market updates settle on entering a month; its decision then allocates money. The goal is selected after Month 12. Every choice receives brief feedback and a lesson. Number keys 1–4 select; Tab/Enter operates all controls. Reduced motion, optional sound, no-WebGL play, and storage failure are supported. Replay uses the same market sequence; comparison keeps the last completed run.
+Avatar, name, and literacy-level onboarding remain. Settings → Change name or avatar lets players edit their profile without resetting their finances or story. Saved profiles persist when browser storage is available. The town view has no ledger tab or floating month/data badge. Choice buttons apply the decision and advance to the next story step immediately. A before/after summary stays in the sidebar beside the next choices, with no Apply or Continue button. Changed accounts use darker square backgrounds. Number keys 1–4 choose as well. The medical alert uses a red full-screen panel and stays open until the player selects payment or the call-Mom alternative. Each main event is one month; account/method/fund choices are substeps in that month. Use mouse, Tab/Enter, or keys 1–4. Financial feedback is in the dashboard; the city has no floating building labels. Reduced motion, optional sounds, no-WebGL fallback, and unavailable storage are supported.
+
+## Financial assumptions
+
+`src/engine.ts` is the only balance-calculation engine. `src/data/story.json` defines the pitch; `src/investments.ts` defines fund descriptions and official issuer links.
+
+- Start: age 18, $1,000 cash, all other balances $0.
+- Work leaves $400/month after simplified taxes/essentials. Uni incurs $5,000 tuition debt and leaves $100/month from part-time work. The raise adds $250/month beginning Month 5; the university raise is a simplified equal-cash assumption.
+- The optional $200 emergency deposit transfers cash. Mom’s $200 gift goes to the emergency fund and immediately pays the $200 medical bill. No family debt is created.
+- General savings and emergency savings are separate. Neither earns interest. Birthday money arrives once in Month 4. Opening an account reserves that $1,000 in cash; investing the raise uses $1,250. If the gift was already saved or invested, the first ETF purchase is $250.
+- Monthly market movement applies before new recurring contributions. Rebalancing existing investments does not inflate contributed capital. All figures round to cents.
+- VAB, XUS, and QQQ are real examples; BizTech is simulated. The pitch’s 2–4%, 7–11%, and 18% annual figures appear in Learn More as illustrations, not verified historical CAGR, expected returns, or the values driving the simulation. Simplified relative-risk categories are not issuer risk ratings. All funds can fall.
+- All four investment methods use the same ETF picker and calculation. Provider services/fees, taxes, distributions, FX, account eligibility, contribution limits, and withdrawal restrictions are not simulated. QQQ’s U.S. listing is represented in simulated dollars; currency conversion is omitted.
+- The Miami option sets a $1,000,000 goal and shows the exact shortfall. Goal progress counts cash + general savings + investments, excluding emergency savings; debt is shown separately. It does not sell investments or buy property. The one-day rental costs the player’s cash balance at that step ($3,400 on the sample QQQ path) and spends it in full to film a course with $0 initial revenue. Savings and investments stay untouched. Zero cash disables renting. “Keep grinding” preserves the portfolio and recurring plan. After the shortfall notification, See my options opens the penthouse choices in a full-screen panel. Both endings complete in the same month; the rental expense applies immediately, and the final summary opens full-screen. Replay, compare, or return to the dashboard from the final panel.
+- Student debt uses a 6% APR ÷ 12.
+- Net worth = cash + general savings + emergency fund + portfolio − student debt.
+- Ledger identity: net worth = $1,000 + income − spending − interest + market growth.
+- Portfolio identity: contributions + market growth − withdrawals = portfolio value.
+
+Storage uses `investly.previous-run.v6`; older story results are not compared to the new script. Avatar profiles retain their existing storage key.
 
 ## Market data
 
-**This checkout did not contain the existing market API mentioned in the request.** Default data in `src/data/markets.json` is fictional and visibly labelled **SAMPLE DATA**. It includes positive and negative months and is never presented as live data.
+No provider is configured in this repository. Default returns are clearly labelled **sample data** and include gains and losses. `src/market.ts` can load a normalized historical ETF feed using `VITE_MARKET_DATA_URL` in `.env.local` (restart Vite). Never place secret provider credentials in browser environment variables; use a server-side proxy if credentials are needed.
 
-`src/market.ts` accepts a normalized historical-data endpoint. Set `VITE_MARKET_DATA_URL` in `.env.local` and restart Vite. The endpoint must support the app's origin (or be same-origin), return twelve consecutive monthly returns in chronological order, and use decimal returns (`0.021` means +2.1%). For example:
+The endpoint must return twelve ordered monthly rows, each containing decimal returns for each real fund:
 
 ```json
 {
-  "label": "Provider name · ETF and stock identifiers",
-  "asOf": "Historical window: Jan–Dec 2025",
+  "label": "Provider and historical period",
+  "asOf": "2025-12-31",
   "months": [
-    { "month": 1, "etf": 0.012, "stocks": -0.02 },
-    { "month": 2, "etf": -0.008, "stocks": 0.03 }
+    { "month": 1, "VAB": 0.002, "XUS": 0.015, "QQQ": -0.02 },
+    { "month": 2, "VAB": -0.004, "XUS": -0.01, "QQQ": 0.03 }
   ]
 }
 ```
 
-The abbreviated example needs all twelve rows to validate. Adapt the actual provider's adjusted-price history into this schema on an existing server/proxy; keep provider credentials server-side, never in a `VITE_` variable. This repository does not invent a provider or include a backend. Market loading is bounded to eight seconds; HTTP, network, or validation failures use an explicitly labelled sample feed. A run freezes its loaded sequence, so replay is deterministic. API mode represents historical data replay, not future/live forecasts.
+The abbreviated example needs all twelve rows to validate; this pitch uses months 1–6. `0.02` means +2%. An old generic `etf`/`stocks` response is rejected instead of being falsely attributed to named funds. BizTech always uses the sample local sequence, including in API mode. Requests time out after eight seconds; invalid/unavailable data visibly falls back to sample mode. Data is frozen for each run and replay. The adapter replays historical data, not forecasts.
 
-## Financial model
-
-`src/engine.ts` is the single pure calculation engine; UI and town only render its results.
-
-- Initial balances: cash $1,000; investments, debt, and emergency fund $0. Age 18, Month 1, goal and account unselected.
-- Monthly net budgets after essentials: university +$100, work +$400, gap year −$100. University incurs $5,000 debt paid directly to tuition. Any gap-year cash deficit is borrowed. These are explicit demo assumptions, not detailed salary calculations.
-- Gift $1,000 in Month 2; bonus $500 in Month 4. Raise $100/month from Month 7.
-- All debt uses a fictional 6% APR divided by twelve, charged before payments. Actual student-loan and consumer-credit rules are not simulated.
-- Apply monthly market returns to existing ETF/stock balances before recurring contributions. Round each holding to cents. No return is guaranteed.
-- Purchases consume cash; savings/investing transfer it. Emergency repairs use savings first, then cash, then the selected funding source. Sales withdraw only the shortfall.
-- Account eligibility, taxes, contribution limits, fees, inflation, and interest on cash/savings are not modeled. Goal targets are illustrative, not quotes or recommendations.
-- Net worth = cash + emergency fund + portfolio − debt.
-- Reconciliation: net worth = $1,000 + cumulative income − spending − interest + market growth.
-- Portfolio = cumulative contributions + cumulative market growth − withdrawals.
-
-ETF value is displayed across three symbolic town districts; these are not additional holdings or an ETF composition claim. Shield size represents emergency savings; debt and interest drive the red drain; the goal building shows selected-goal progress. Coins are symbolic; exact balances appear in the ledger.
-
-## Verification
+## Verification and media
 
 ```sh
 npm test
@@ -72,8 +72,8 @@ npm run build
 npm run test:e2e
 ```
 
-Engine tests enumerate valid branches, reconcile every ledger entry, and cover account substeps, repair funding, negative returns, six contributions, API validation/fallback, and invalid actions. Browser tests cover the real town, account learning, mobile, goals, replay, persistence, and unavailable WebGL/storage. They use installed Google Chrome and save current screenshots as `artifacts/investly-*.png`.
+Engine tests reconcile every substantive branch and cover accounts, all four methods, named funds, general/emergency savings, market downturns, penthouse shortfalls, rental expenses, student interest, deterministic replay, and API fallback. Browser tests cover avatar onboarding, the full pitch with the real city, direct choice buttons, keyboard controls, centered full-screen medical alerts, Learn More, mobile, replay, storage, and no-WebGL play.
 
-`docs/DEMO.md` describes recording; `docs/DEVPOST.md` contains updated submission copy. Existing `life-ledger-*` artifacts show the previous product and must not be used to represent the new flow.
+Current screenshots use `artifacts/pitch-*.png`. `docs/DEMO.md` and `scripts/record-demo.mjs` describe recording the new pitch. Existing `investly-demo.webm` and `life-ledger-*` videos depict earlier scripts; do not use them as recordings of this pitch. `docs/DEVPOST.md` contains updated submission copy.
 
-React, TypeScript, Vite, React Three Fiber, Three.js, Drei, Motion, Lucide, and selected Kenney CC0 models/sounds. Fonts are served locally. Asset licenses: `docs/ASSETS.md` and `public/licenses/`. The Motion SVG chart adapts the linked Bklit chart's interactive direction to monthly data. No account backend, brokerage execution, analytics, or authenticated Investly service integration is included.
+React, TypeScript, Vite, React Three Fiber, Three.js, Drei, Motion, Lucide, and Kenney city assets. Avatar models and their attribution are preserved. See `docs/ASSETS.md` and `public/licenses/`. No real brokerage trades, real account opening, or authenticated Investly service connection is performed.

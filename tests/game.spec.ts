@@ -1,72 +1,141 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
-async function pick(page: Page, name: string) {
-  await page.getByRole('button', { name, exact: true }).click();
-  await page.getByRole('button', { name: 'Make this choice', exact: true }).click();
-}
-async function next(page: Page) {
-  await page.getByRole('button', { name: /Continue to Month|Choose my financial goal/ }).click();
-  if (await page.getByRole('dialog', { name: 'An unexpected expense' }).count()) await page.getByRole('button', { name: 'See my options' }).click();
-}
-async function decision(page: Page, name: string) { await pick(page, name); await next(page); }
-async function finish(page: Page, goal = 'First Home') {
-  for (let month = 7; month <= 12; month++) await decision(page, 'Keep my plan going');
-  await page.getByRole('button', { name: goal, exact: true }).click();
-  await page.getByRole('button', { name: 'Set my goal' }).click();
-  await expect(page.getByRole('heading', { name: 'Your future has a starting point.' })).toBeVisible();
-}
-async function noWebGL(page: Page) {
-  await page.addInitScript(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) { if (type.includes('webgl')) return null; return original.call(this, type as '2d', ...args); } as typeof HTMLCanvasElement.prototype.getContext; });
-}
-test('town, account learning, ETF journey, recurring growth and persisted comparison', async ({ page }) => {
-  test.setTimeout(150000);
-  const errors: string[] = []; page.on('pageerror', e => errors.push(e.message));
+async function start(page: Page) {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Choose your starting path' })).toBeVisible();
-  await expect(page.locator('.profile')).toContainText('Age 18');
-  await expect(page.locator('.stat.cash')).toContainText('$1,000');
-  await expect(page.locator('[data-city-ready="true"]')).toBeVisible({timeout: 30000});
-  await expect(page.locator('.town-label, .building-sign')).toHaveCount(0);
-  await page.screenshot({path: 'artifacts/investly-desktop.png', fullPage: true});
-  await page.setViewportSize({width:390,height:844});
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-  await page.screenshot({path:'artifacts/investly-city-mobile.png',fullPage:true});
-  await page.setViewportSize({width:1440,height:1050});
-  await page.keyboard.press('2'); await expect(page.getByRole('button', {name:'Start Working', exact:true})).toHaveAttribute('aria-pressed','true');
-  await decision(page, 'Start Working'); await pick(page, 'Start Investing');
-  await page.getByRole('button', {name:'Learn more about FHSA'}).click(); await expect(page.getByRole('dialog')).toContainText('first home'); await page.keyboard.press('Escape');
-  await page.getByRole('button', {name:'TFSA',exact:true}).click(); await page.getByRole('button',{name:'Open this account'}).click();
-  await expect(page.locator('.account-status')).toHaveText('TFSA · Open'); await expect(page.locator('.profile')).toContainText('Month 2 / 12'); await next(page);
-  await decision(page,'Buy a diversified ETF'); await expect(page.locator('.stat.investment')).toContainText('$1,021');
-  await expect(page.getByRole('button',{name:'Pay down debt',exact:true})).toBeDisabled();
-  await pick(page, 'Build an emergency fund'); await expect(page.locator('.stat.savings')).toContainText('$500'); await expect(page.locator('.town-label')).toHaveCount(0); await page.screenshot({path:'artifacts/investly-shield.png',fullPage:true}); await next(page);
-  await expect(page.locator('.portfolio-panel .negative')).toHaveCount(2);
-  await pick(page,'Cover the repair'); await expect(page.locator('.result-description')).toContainText('$500 from your emergency fund + $200 cash'); await next(page);
-  await pick(page,'Automatically invest $100/month'); await expect(page.locator('.result-description')).toContainText('Recurring Investment Created'); await next(page);
-  await finish(page); await expect(page.getByRole('progressbar',{name:'First Home goal'})).toBeVisible();
-  await page.getByRole('tab',{name:'Your ledger'}).click(); await expect(page.getByRole('heading',{name:'Every dollar has a story.'})).toBeVisible();
-  await page.screenshot({path:'artifacts/investly-year.png',fullPage:true});
-  await page.getByRole('button',{name:'Try a different story'}).click(); await page.getByRole('button',{name:'Compare paths',exact:true}).click();
-  await expect(page.getByRole('dialog')).toContainText('Buy a diversified ETF'); await page.screenshot({path:'artifacts/investly-compare.png',fullPage:true});
-  await page.reload(); await page.getByRole('button',{name:'Compare paths',exact:true}).click(); await expect(page.getByRole('dialog')).toContainText('First Home'); expect(errors).toEqual([]);
+  await page.getByLabel('Your name',{exact:true}).fill('Maya');
+  await page.getByRole('radio',{name:'Generic Female',exact:true}).click();
+  await page.getByRole('radio',{name:/Level 1/}).click();
+  await page.getByRole('button',{name:'Start',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'You’re 18. What’s next?'})).toBeVisible();
+}
+async function pick(page: Page, name: string) { await page.getByRole('button',{name,exact:true}).click(); }
+async function noWebGL(page: Page) {
+  await page.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type:string,...args:unknown[]){if(type.includes('webgl'))return null;return original.call(this,type as '2d',...args);} as typeof HTMLCanvasElement.prototype.getContext;});
+}
+async function checkFullScreenPanel(page: Page) {
+  const panel=page.getByRole('dialog');await expect(panel).toBeVisible();
+  const bounds=await panel.boundingBox();
+  expect(bounds?.x).toBe(0);expect(bounds?.y).toBe(0);
+  expect(bounds?.width).toBe(page.viewportSize()!.width);expect(bounds?.height).toBe(page.viewportSize()!.height);
+  await page.keyboard.press('Escape');await expect(panel).toBeVisible();
+  for(let i=0;i<5;i++){await page.keyboard.press('Tab');expect(await panel.evaluate(el=>el.contains(document.activeElement))).toBe(true);}
+}
+async function reachInvesting(page: Page) {
+  await pick(page,'Start working');await pick(page,'No — keep it in cash');await pick(page,'Call Mom to ask for money :(');
+  await pick(page,'Open an account');await pick(page,'TFSA');await pick(page,'Buy one ETF');await pick(page,'QQQ');
+}
+test('campsite story advances immediately, red medical alert, final fullscreen summary and replay',async({page})=>{
+  test.setTimeout(150000);const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await start(page);await expect(page.locator('[data-city-ready="true"]')).toBeVisible({timeout:30000});
+  await page.screenshot({path:'artifacts/pitch-start.png',fullPage:true});
+  await page.keyboard.press('2');
+  await expect(page.locator('.profile')).toContainText('Month 2');await expect(page.locator('.financial-update')).toContainText('BizTech mascot');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:/^(Continue|Apply update|Make this choice)$/})).toHaveCount(0);
+  await pick(page,'No — keep it in cash');await checkFullScreenPanel(page);
+  await expect(page.getByRole('dialog')).toHaveClass(/danger/);await expect(page.locator('.alert-panel')).toHaveCSS('border-color','rgb(231, 118, 127)');
+  await expect(page.getByRole('dialog')).toContainText('You snuck into a frat party');
+  await page.screenshot({path:'artifacts/pitch-alert.png'});
+  await pick(page,'Take money from my emergency fund');await expect(page.getByRole('heading',{name:'Your emergency fund is empty!'})).toBeVisible();
+  await pick(page,'Call Mom to ask for money :(');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.locator('.profile')).toContainText('Month 4');await expect(page.locator('.financial-update')).toContainText('Mom gave you $200');
+  await pick(page,'Open an account');await pick(page,'TFSA');await expect(page.getByRole('heading',{name:'You got a raise!'})).toBeVisible();
+  await page.keyboard.press('4');await expect(page.getByRole('heading',{name:'Which ETF would you like to invest in?'})).toBeVisible();
+  await pick(page,'Learn more about QQQ');await expect(page.getByRole('dialog')).toContainText('not verified historical CAGR');await page.keyboard.press('Escape');
+  await page.screenshot({path:'artifacts/pitch-etfs.png',fullPage:true});
+  await pick(page,'QQQ');await expect(page.locator('.profile')).toContainText('Month 6');await expect(page.locator('.stat.investment')).toContainText('$1,600');
+  await expect(page.getByRole('heading',{name:'Omg congrats! Your investments grew.'})).toBeVisible();
+  await pick(page,'Continue investing in high risk');await checkFullScreenPanel(page);
+  await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await expect(page.getByRole('dialog')).not.toHaveClass(/danger/);
+  await expect(page.locator('.ending-summary')).toContainText('$1,600.00');await expect(page.locator('.ending-summary .summary-changed')).toHaveCount(3);
+  await page.screenshot({path:'artifacts/pitch-result.png'});
+  await pick(page,'Compare your paths');await expect(page.getByRole('dialog',{name:'Two paths. A clearer picture.'})).toBeVisible();await pick(page,'Close dialog');
+  await pick(page,'Try a different story');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await pick(page,'Compare paths');await expect(page.getByRole('dialog')).toContainText('Continue investing in high risk');
+  await page.reload();await pick(page,'Compare paths');await expect(page.getByRole('dialog')).toContainText('QQQ');expect(errors).toEqual([]);
 });
-test('mobile cash/savings path, account-free finish, settings and storage fallback', async ({ page }) => {
-  await noWebGL(page); await page.addInitScript(() => { Storage.prototype.getItem = () => {throw new Error('Blocked');}; Storage.prototype.setItem = () => {throw new Error('Blocked');}; });
-  await page.setViewportSize({width:390,height:844}); await page.goto('/');
-  await expect(page.getByRole('heading',{name:'Every choice still counts.'})).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
-  await page.screenshot({path:'artifacts/investly-mobile.png',fullPage:true});
-  await decision(page,'University'); await decision(page,'Put it in Savings'); await decision(page,'Keep it as cash'); await decision(page,'Pay down debt');
-  await pick(page,'Cover the repair'); await expect(page.locator('.result-description')).toContainText('emergency fund covered'); await next(page);
-  await decision(page,'Save $100/month'); await finish(page,'Puppy');
-  await expect(page.getByText(/Browser storage is unavailable/)).toBeVisible(); await expect(page.locator('.stat.savings')).toContainText('$900'); await expect(page.locator('.account-status')).toContainText('Not opened');
-  await page.getByRole('button',{name:'How this simulation works'}).click(); await expect(page.getByRole('dialog')).toContainText('fictional 6% APR'); await page.getByRole('button',{name:'Close dialog'}).click();
-  await page.getByRole('button',{name:'Settings',exact:true}).click(); await page.getByRole('button',{name:/Reduce motion/}).click(); await expect(page.getByRole('button',{name:/Reduce motion/})).toHaveAttribute('aria-pressed','true');
+test('mobile red alert, savings path, and final summary work without WebGL or storage',async({page})=>{
+  await noWebGL(page);await page.addInitScript(()=>{Storage.prototype.getItem=()=>{throw new Error('Blocked');};Storage.prototype.setItem=()=>{throw new Error('Blocked');};});
+  await page.setViewportSize({width:390,height:844});await start(page);await expect(page.getByRole('heading',{name:'Every choice still counts.'})).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
+  await pick(page,'Uni');await pick(page,'Yes — save $200');await checkFullScreenPanel(page);
+  await page.screenshot({path:'artifacts/pitch-alert-mobile.png'});
+  await pick(page,'Take money from my emergency fund');await pick(page,'Put it in a savings account');await pick(page,'Work with an advisor');await pick(page,'FHSA');await pick(page,'XUS');
+  await pick(page,'Buy a penthouse in Miami');await pick(page,'See my options');await pick(page,'Keep grinding');await checkFullScreenPanel(page);
+  await expect(page.getByText(/Browser storage is unavailable/)).toBeVisible();
+  await page.screenshot({path:'artifacts/pitch-mobile.png'});
+  await pick(page,'Back to dashboard');await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(page.getByRole('progressbar',{name:'Miami penthouse goal'})).toBeVisible();
+  await pick(page,'View final summary');await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await pick(page,'Back to dashboard');
+  await expect(page.getByRole('tab',{name:'Your ledger'})).toHaveCount(0);await expect(page.locator('.world-status')).toHaveCount(0);
+  await pick(page,'How this simulation works');await expect(page.getByRole('dialog')).toContainText('Your financial update stays in the sidebar');await pick(page,'Close dialog');
 });
-test('gap-year shortfall offers sale, late account opening, and keyboard fourth choice', async ({page}) => {
-  await noWebGL(page); await page.goto('/'); await decision(page,'Gap Year'); await decision(page,'Spend It'); await pick(page,'Buy individual stocks');
-  await page.getByRole('button',{name:'RRSP',exact:true}).click(); await page.getByRole('button',{name:'Open this account'}).click(); await next(page);
-  await decision(page,'Invest it'); await pick(page,'Sell investments'); await expect(page.locator('.result-description')).toContainText('$700 sold from investments'); await next(page);
-  await page.keyboard.press('4'); await expect(page.getByRole('button',{name:'Split the money',exact:true})).toHaveAttribute('aria-pressed','true'); await page.getByRole('button',{name:'Make this choice'}).click(); await next(page); await finish(page,'Car');
-  await expect(page.getByRole('progressbar',{name:'Car goal'})).toBeVisible(); await expect(page.locator('.portfolio-panel')).toContainText('Withdrawn');
+test('BizTech and managed investing preserve fund balances through the automatic progression',async({page})=>{
+  await noWebGL(page);await start(page);await pick(page,'Start working');await pick(page,'Yes — save $200');await pick(page,'Take money from my emergency fund');await pick(page,'Buy BizTech');
+  await expect(page.locator('.holdings-list')).toContainText('BizTech');await pick(page,'Use a managed investing app');await pick(page,'RRSP');await pick(page,'VAB');
+  await expect(page.locator('.profile')).toContainText('Month 6');await pick(page,'Invest in low risk');
+  await expect(page.getByRole('dialog')).toContainText('Your choices added up.');await expect(page.locator('.stat.debt')).toContainText('$0');await expect(page.locator('.holdings-list')).toContainText('VAB');
+});
+test('cash-matched rental opens the final summary immediately and highlights changed accounts',async({page})=>{
+  await noWebGL(page);await start(page);await reachInvesting(page);await pick(page,'Buy a penthouse in Miami');
+  await expect(page.locator('.story-description')).toContainText('$995,000.00');await pick(page,'See my options');await checkFullScreenPanel(page);
+  await expect(page.getByRole('button',{name:'Rent a penthouse to larp and sell a course'})).toContainText('$3,400');
+  await expect(page.locator('.alert-panel .story-card > div').nth(1)).toHaveCSS('opacity','1');await page.screenshot({path:'artifacts/pitch-penthouse.png'});
+  await pick(page,'Rent a penthouse to larp and sell a course');await checkFullScreenPanel(page);
+  await expect(page.getByRole('heading',{name:'Your choices added up.'})).toBeVisible();await expect(page.locator('.stat.cash').first()).toContainText('$0');
+  await expect(page.getByRole('dialog')).toContainText('Course revenue so far: $0');
+  await expect(page.locator('.ending-summary')).toContainText('$1,600.00');
+  await expect(page.locator('.ending-summary .summary-changed').first()).toHaveCSS('border-radius','0px');
+  await expect(page.locator('.ending-summary .summary-changed').first()).toHaveCSS('background-color','rgb(0, 39, 37)');
+  await expect(page.locator('.alert-panel .story-card > div').nth(1)).toHaveCSS('opacity','1');await page.screenshot({path:'artifacts/pitch-rental-summary.png'});
+  await page.reload();await pick(page,'Compare paths');await expect(page.getByRole('dialog')).toContainText('Miami: rent a penthouse and sell a course');
+});
+test('sidebar summaries have no advance button and dark square backgrounds only on changed rows',async({page})=>{
+  await noWebGL(page);await page.setViewportSize({width:390,height:844});await start(page);
+  await page.getByRole('button',{name:'Start working',exact:true}).evaluate(el=>{(el as HTMLButtonElement).click();(el as HTMLButtonElement).click();});
+  await expect(page.locator('.profile')).toContainText('Month 2');await expect(page.locator('.stat.cash').first()).toContainText('$1,800');
+  await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.financial-update')).toBeVisible();
+  await expect(page.locator('.financial-update button')).toHaveCount(0);await expect(page.getByRole('button',{name:/^(Continue|Apply update)$/})).toHaveCount(0);
+  await expect(page.locator('.update-changed')).toHaveCount(2);
+  const changed=page.locator('.update-changed').first();await expect(changed).toContainText('Cash');
+  await expect(changed.locator('th')).toHaveCSS('background-color','rgb(0, 39, 37)');await expect(changed.locator('th')).toHaveCSS('border-radius','0px');
+  await expect(page.locator('.update-table tr').filter({has:page.getByRole('rowheader',{name:'Investments',exact:true})})).toHaveAttribute('data-changed','false');
+  await page.locator('.financial-update').scrollIntoViewIfNeeded();await page.screenshot({path:'artifacts/pitch-financial-update.png',fullPage:true});
+  await pick(page,'Yes — save $200');await expect(page.locator('.stat.savings')).toContainText('$200');
+  await expect(page.locator('.update-changed')).toHaveCount(3);await expect(page.locator('.financial-update')).toContainText('$200 moved into your emergency fund');
+  await pick(page,'Take money from my emergency fund');await expect(page.getByRole('dialog')).toHaveCount(0);await expect(page.locator('.profile')).toContainText('Month 4');
+  await expect(page.locator('.financial-update')).toContainText('covered the $200 bill');
+});
+
+test('edit player name and avatar without resetting finances, then persist and cancel drafts',async({page})=>{
+  test.setTimeout(120000);
+  const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
+  await start(page);await expect(page.locator('[data-city-ready="true"]')).toBeVisible({timeout:30000});
+  await expect(page.locator('.view-tabs, .ledger-view, .world-status')).toHaveCount(0);
+  await pick(page,'Start working');await expect(page.locator('.profile')).toContainText('Month 2');
+  const finances=await page.locator('.finances').innerText();
+  await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
+  await expect(page.getByRole('dialog',{name:'Edit your player'})).toBeVisible();
+  await expect(page.getByLabel('Player name',{exact:true})).toHaveValue('Maya');
+  await page.getByLabel('Player name',{exact:true}).fill('   ');await expect(page.getByRole('button',{name:'Save changes',exact:true})).toBeDisabled();
+  await page.getByLabel('Player name',{exact:true}).fill('  Alex  ');await page.getByRole('radio',{name:'Generic Male',exact:true}).click();
+  const avatarLoaded=page.waitForResponse(response=>response.url().endsWith('/models/avatars/generic-male.glb') && response.ok());
+  await pick(page,'Save changes');await avatarLoaded;
+  await expect(page.locator('.profile h2')).toHaveText('Alex');await expect(page.locator('.profile img')).toHaveAttribute('src','/models/avatars/generic-male.webp');
+  await expect(page.locator('[data-city-ready="true"]')).toHaveAttribute('aria-label',"Campsite with Alex's selected character");
+  await expect(page.locator('.profile')).toContainText('Month 2');expect(await page.locator('.finances').innerText()).toBe(finances);
+  await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
+  await page.getByLabel('Player name',{exact:true}).fill('Discard me');await page.getByRole('radio',{name:'Chicken Guy',exact:true}).click();await pick(page,'Cancel');
+  await page.getByRole('button',{name:/Change name or avatar/}).click();await expect(page.getByLabel('Player name',{exact:true})).toHaveValue('Alex');await expect(page.getByRole('radio',{name:'Generic Male',exact:true})).toHaveAttribute('aria-checked','true');
+  await page.screenshot({path:'artifacts/edit-player.png'});await page.keyboard.press('Escape');
+  await page.reload();await expect(page.locator('.profile h2')).toHaveText('Alex');await expect(page.locator('.profile img')).toHaveAttribute('src','/models/avatars/generic-male.webp');expect(errors).toEqual([]);
+});
+test('player edits work on mobile when browser storage is unavailable',async({page})=>{
+  await noWebGL(page);await page.addInitScript(()=>{Storage.prototype.getItem=()=>{throw new Error('Blocked');};Storage.prototype.setItem=()=>{throw new Error('Blocked');};});
+  await page.setViewportSize({width:390,height:650});await start(page);await pick(page,'Start working');
+  await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
+  await page.getByLabel('Player name',{exact:true}).fill('Jo');await page.getByRole('radio',{name:'Food Worker',exact:true}).click();
+  await pick(page,'Save changes');await expect(page.locator('.profile h2')).toHaveText('Jo');await expect(page.locator('.profile')).toContainText('Food Worker');await expect(page.locator('.profile')).toContainText('Month 2');await expect(page.locator('.stat.cash').first()).toContainText('$1,800');
+  await pick(page,'Settings');await expect(page.getByRole('dialog')).toContainText('Changes last for this session');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBe(390);
 });
