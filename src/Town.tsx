@@ -6,9 +6,11 @@ import { Box3, Group, MathUtils, Mesh, Vector3 } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Effect, GameState, Sector } from './engine';
 import { money, portfolio } from './engine';
+import { BankBuilding, Construction, HomeVilla, Island, SkyCloud, StreetLife, Tree } from './TownScenery';
+import { Building2, CreditCard, Flag, Landmark, ShieldCheck, UserRound, Zap } from 'lucide-react';
 
 type Point = [number, number, number];
-const spots: Record<string, Point> = { home: [-3.4, 0.15, 2.5], bank: [-3.5, 0.15, -2.5], technology: [0, 0.15, -3.2], energy: [3.6, 0.15, -2.9], retail: [3.5, 0.15, 0.9], goal: [1.1, 0.15, 3.4], maya: [-0.8, 0.15, 0.8], debt: [-5.25, 0.15, 0] };
+const spots: Record<string, Point> = { home: [1, 0.2, -0.8], bank: [-4.25, 0.2, -2.9], technology: [0.4, 0.2, -4.8], energy: [3.8, 0.2, -4.6], retail: [5.65, 0.2, -1.5], goal: [2.6, 0.2, 3.6], maya: [-1.1, 0.2, 0.65], debt: [6.35, 0.2, 1.3] };
 
 function Model({ name, size = 2, position = [0, 0, 0], rotation = 0 }: { name: string; size?: number; position?: Point; rotation?: number }) {
   const { scene } = useGLTF(`/models/${name}.glb`);
@@ -23,22 +25,27 @@ function Model({ name, size = 2, position = [0, 0, 0], rotation = 0 }: { name: s
   return <group position={position} rotation={[0, rotation, 0]}><primitive object={object} /></group>;
 }
 function Label({ position, title, value, tone = 'neutral' }: { position: Point; title: string; value?: string; tone?: string }) {
-  return <Html position={position} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}><div className={`town-label ${tone}`}><span className="label-dot" />{title}{value && <strong>{value}</strong>}</div></Html>;
+  const Icon = tone === 'cash' ? Landmark : tone === 'savings' ? ShieldCheck : tone === 'debt' ? CreditCard : tone === 'goal' ? Flag : tone === 'energy' ? Zap : tone === 'neutral' ? UserRound : Building2;
+  return <Html position={position} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}><div className={`town-label ${tone}`}><Icon /><span className="label-copy">{title}{value && <strong>{value}</strong>}</span></div></Html>;
 }
 function Plot({ position, tint = '#c9d9ae', width = 2.8, depth = 2.6 }: { position: Point; tint?: string; width?: number; depth?: number }) {
-  return <RoundedBox args={[width, 0.1, depth]} radius={0.12} smoothness={2} position={position} receiveShadow><meshStandardMaterial color={tint} /></RoundedBox>;
+  return <RoundedBox args={[width, 0.1, depth]} radius={0.045} smoothness={2} position={position} receiveShadow><meshStandardMaterial color={tint} /></RoundedBox>;
 }
 function Shield({ amount, reduced }: { amount: number; reduced: boolean }) {
-  const mesh = useRef<Mesh>(null); const target = amount ? 0.75 + amount / 1500 * 0.5 : 0;
-  useFrame((_, delta) => { if (mesh.current) mesh.current.scale.setScalar(reduced ? target : MathUtils.damp(mesh.current.scale.x, target, 5, delta)); });
-  return <group position={spots.home}><mesh ref={mesh} position={[0, 0.05, 0]} scale={0}><sphereGeometry args={[2, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshPhysicalMaterial color="#79dcad" transparent opacity={0.2} roughness={0.12} metalness={0.1} depthWrite={false} side={2} /></mesh>{amount > 0 && <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}><ringGeometry args={[1.58, 1.63, 64]} /><meshBasicMaterial color="#69c995" transparent opacity={0.7} /></mesh>}</group>;
+  const group = useRef<Group>(null); const target = amount ? 1.03 + amount / 1500 * 0.25 : 0;
+  useFrame((_, delta) => { if (group.current) { const scale = reduced ? target : MathUtils.damp(group.current.scale.x, target, 5, delta); group.current.scale.set(scale, scale * 1.58, scale); } });
+  return <group position={spots.home}><group ref={group} scale={0}>
+    <mesh position={[0, 0.02, 0]}><sphereGeometry args={[2.45, 40, 24, 0, Math.PI * 2, 0, Math.PI / 2]} /><meshPhysicalMaterial color="#48ffd0" emissive="#05b79f" emissiveIntensity={0.5} transparent opacity={0.15} roughness={0.1} depthWrite={false} side={2} /></mesh>
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, .04, 0]}><ringGeometry args={[2.4, 2.46, 64]} /><meshBasicMaterial color="#bcfff1" transparent opacity={0.9} /></mesh>
+    {[0,Math.PI/2].map(a=><mesh key={a} rotation={[0,a,0]}><torusGeometry args={[2.44,.017,6,60,Math.PI]} /><meshBasicMaterial color="#a3ffec" transparent opacity={0.7} /></mesh>)}
+  </group></group>;
 }
-function SectorBuilding({ sector, value, reduced }: { sector: Sector; value: number; reduced: boolean }) {
-  const group = useRef<Group>(null); const size = sector === 'technology' ? 3 : sector === 'energy' ? 1.8 : 1.8;
+function SectorBuilding({ sector, value, reduced, showLabel }: { sector: Sector; value: number; reduced: boolean; showLabel: boolean }) {
+  const group = useRef<Group>(null); const size = sector === 'technology' ? 1.9 : 1.45;
   const target = 0.82 + Math.min(value / 900, 1.2) * 0.28;
   useFrame((_, delta) => { if (group.current) group.current.scale.y = reduced ? target : MathUtils.damp(group.current.scale.y, target, 4, delta); });
   const p = spots[sector];
-  return <group><Plot position={p} tint={sector === 'technology' ? '#d8d4e2' : sector === 'energy' ? '#dfe0ba' : '#e4d5c2'} /><group ref={group} position={p}><Model name={sector === 'energy' ? 'factory' : sector} size={size} rotation={Math.PI / 2} />{sector === 'energy' && <Model name="solar" size={1.15} position={[0.4, 0, 1.2]} />}</group><Label position={[p[0], p[1] + size + 0.45, p[2]]} title={sector === 'technology' ? 'Technology' : sector === 'energy' ? 'Energy' : 'Retail'} value={money(value)} tone={sector} /></group>;
+  return <group><Plot position={p} tint={sector === 'technology' ? '#d8d4e2' : sector === 'energy' ? '#dfe0ba' : '#e4d5c2'} /><group ref={group} position={p}><Model name={sector === 'energy' ? 'factory' : sector} size={size} rotation={Math.PI / 2} />{sector === 'energy' && <Model name="solar" size={1.15} position={[0.4, 0, 1.2]} />}</group>{showLabel && <Label position={[p[0], p[1] + size + 0.45, p[2]]} title={sector === 'technology' ? 'Technology' : sector === 'energy' ? 'Energy' : 'Retail'} value={money(value)} tone={sector} />}</group>;
 }
 function Turbine({ reduced }: { reduced: boolean }) {
   const rotor = useRef<Group>(null);
@@ -65,7 +72,7 @@ function CoinTrail({ from, to, amount, red = false, reduced }: { from: Point; to
     });
   });
   if (reduced) return null;
-  return <group ref={group}>{Array.from({ length: count }, (_, i) => <mesh key={i}><cylinderGeometry args={[0.095, 0.095, 0.04, 12]} /><meshStandardMaterial color={red ? '#ec7270' : '#f8cd52'} metalness={0.45} roughness={0.25} emissive={red ? '#8f2424' : '#af6c0b'} emissiveIntensity={0.2} /></mesh>)}</group>;
+  return <group ref={group}>{Array.from({ length: count }, (_, i) => <mesh key={i}><cylinderGeometry args={[0.15, 0.15, 0.065, 16]} /><meshStandardMaterial color={red ? '#ffba47' : '#ffd340'} metalness={0.45} roughness={0.25} emissive={red ? '#8f2424' : '#af6c0b'} emissiveIntensity={0.6} /></mesh>)}</group>;
 }
 function Effects({ effects, reduced }: { effects: Effect[]; reduced: boolean }) {
   return <>{effects.filter(e => e.amount !== 0).map((e, i) => {
@@ -92,35 +99,40 @@ function CameraMotion({ trigger, reduced, zoom }: { trigger: string; reduced: bo
   useFrame((_, delta) => {
     time.current += delta;
     const pulse = reduced ? 0 : Math.sin(Math.min(time.current / 2.8, 1) * Math.PI) * 1.1;
-    camera.zoom = Math.min(size.width / 20, size.height / 13.2) * zoom + pulse;
-    camera.lookAt(0, 0, 0); camera.updateProjectionMatrix();
+    camera.zoom = Math.min(size.width / 20.3, size.height / 18) * zoom + pulse;
+    camera.lookAt(0, 1.2, 0); camera.updateProjectionMatrix();
   }); return null;
 }
 function World({ state, reduced, zoom, onReady }: { state: GameState; reduced: boolean; zoom: number; onReady: () => void }) {
   useEffect(onReady, [onReady]);
   const trigger = `${state.month}-${state.phase}-${state.decisionHistory.length}`;
+  const trees: [number, number][] = [
+    [-6.8,-4.9],[-5.7,-5.2],[-4.7,-5.25],[-3.2,-5.1],[-1.9,-5.3],[-.8,-5.6],[2,-5.4],[5.1,-5.3],[6.35,-4.9],
+    [-6.8,-3.8],[-6.5,-2.7],[-6.9,-1.6],[-5.9,-.7],[-4.6,-.6],[-3.6,-.6],[-2.7,-.2],[-.75,-3.8],
+    [6.9,-3.5],[6.85,-2.2],[6.8,-.4],[5.2,.1],[3.3,.3],[-6.7,3.2],[-5.8,3.7],[-4.8,4.9],[-6.3,5.3],
+    [-3.7,4.2],[-2.9,5.1],[-1.7,4],[-1.1,5.4],[.1,4.8],[.6,5.8],[4.2,5.5],[5.45,4.85],[6.7,4.7],[6.7,3.5],
+    [-5.5,3.1],[-3.8,3.4],[-2.2,4.7],[5.6,3.8],[4.75,5.7],[-6.7,.5],[6.8,5.65],[-.9,-2.1]
+  ];
   return <>
-    <ambientLight intensity={1.5} /><hemisphereLight args={['#fff9e9', '#b9c7a5', 1.5]} />
-    <directionalLight position={[-5, 12, 6]} intensity={3} castShadow shadow-mapSize={[2048, 2048]} shadow-camera-left={-12} shadow-camera-right={12} shadow-camera-top={12} shadow-camera-bottom={-12} shadow-normalBias={0.05} />
-    <CameraMotion trigger={trigger} reduced={reduced} zoom={zoom} />
-    <RoundedBox args={[13.6, 0.65, 11.6]} radius={0.3} smoothness={3} position={[0, -0.4, 0]} receiveShadow castShadow><meshStandardMaterial color="#c6c5a5" /></RoundedBox>
-    <RoundedBox args={[13.7, 0.22, 11.7]} radius={0.1} smoothness={3} position={[0, -0.03, 0]} receiveShadow><meshStandardMaterial color="#c6d7ad" /></RoundedBox>
-    {[-5, -2.5, 0, 2.5, 5].map(x => <Model key={`h${x}`} name={x === 0 ? 'crossroad' : 'road'} size={2.5} position={[x, 0.13, 0]} rotation={Math.PI / 2} />)}
-    {[-5, -2.5, 2.5, 5].map(z => <Model key={z} name="road" size={2.5} position={[0, 0.13, z]} />)}
-    <Plot position={spots.home} tint="#bdce9e" width={3.1} depth={3} /><Model name="home" position={spots.home} size={2.4} rotation={Math.PI / 2} /><Shield amount={state.emergencySavings} reduced={reduced} />
-    <Label position={[-3.5, 2.45, 2.5]} title="Your home" value={state.emergencySavings ? `${money(state.emergencySavings)} protected` : 'A fresh start'} tone="savings" />
-    <Plot position={spots.bank} tint="#ced9da" /><Model name="bank" position={spots.bank} size={2.35} rotation={Math.PI / 2} /><Label position={[-3.5, 2.95, -2.5]} title="Bank" value={money(state.cash)} tone="cash" />
-    {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <SectorBuilding key={sector} sector={sector} value={state.investmentsBySector[sector]} reduced={reduced} />)}
-    <Plot position={spots.goal} tint="#d8ceb1" width={2.4} depth={2.2} />
-    <group position={spots.goal}><group scale={[1, 0.12 + state.goalSavings / 1500 * 0.88, 1]}><Model name="goal" size={1.8} /></group>{state.goalSavings < 1500 && <>{[-0.9, 0.9].map(x => <mesh key={x} position={[x, 0.55 + state.goalSavings / 3000, 0]}><boxGeometry args={[0.055, 1.1 + state.goalSavings / 1500, 1.85]} /><meshStandardMaterial color="#d6b27c" wireframe /></mesh>)}</>}</group>
-    <Label position={[1.1, 2.3, 3.5]} title="Tuition goal" value={`${Math.round(state.goalSavings / 1500 * 100)}% built`} tone="goal" />
-    <Maya reduced={reduced} /><Turbine reduced={reduced} />
-    {state.creditCardDebt > 0 && <><Line points={[[-3.5, 0.35, -2.5], [-5.25, 0.35, -1.8], [-5.25, 0.35, 0]]} color="#e97670" lineWidth={5} /><group position={spots.debt}><mesh position={[0, 0.35, 0]} castShadow><boxGeometry args={[0.65, 0.7, 0.7]} /><meshStandardMaterial color="#bd655f" /></mesh></group><Label position={[-5.25, 1.2, 0]} title="Debt drain" value={money(state.creditCardDebt)} tone="debt" /></>}
-    {[[-5.6, -4.5], [-4.9, -4.7], [1.6, -4.8], [5.7, 3.5], [5.6, 4.5], [-5.7, 3.7], [-5, 4.6], [-2.5, 4.8], [3.6, 4.6], [5.8, -1.3]].map(([x, z], i) => <Model key={i} name={['tree-oak', 'tree-pine', 'tree-round'][i % 3]} size={1.05 + i % 3 * 0.22} position={[x, 0.12, z]} rotation={i} />)}
-    {[[-5.9, 2.5], [4.7, 4.8], [2.5, -5]].map(([x, z], i) => <Model key={i} name="rock" size={0.35} position={[x, 0.13, z]} />)}
+    <ambientLight intensity={0.85} /><hemisphereLight args={['#e6faff', '#b4c98b', 1.4]} />
+    <directionalLight position={[-5, 14, 8]} intensity={2.7} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-13} shadow-camera-right={13} shadow-camera-top={13} shadow-camera-bottom={-13} shadow-normalBias={0.05} />
+    <CameraMotion trigger={trigger} reduced={reduced} zoom={zoom} /><Island />
+    {[-6.25,-3.75,-1.25,1.25,3.75,6.25].map(x => <Model key={`h${x}`} name={x === -1.25 ? 'crossroad' : 'road'} size={2.5} position={[x, 0.14, 2]} rotation={Math.PI / 2} />)}
+    {[-5.5,-3,-.5,4.5].map(z => <Model key={z} name="road" size={2.5} position={[-1.25, 0.13, z]} />)}
+    <Plot position={spots.home} tint="#9bce57" width={3.9} depth={4.25} /><HomeVilla position={spots.home} /><Shield amount={state.emergencySavings} reduced={reduced} />
+    <Label position={[1, 5.05, -.8]} title="Emergency Fund" value={state.emergencySavings ? `${money(state.emergencySavings)} protected · Your home` : 'Your home · Build your protection'} tone="savings" />
+    <Plot position={spots.bank} tint="#cbd89e" width={3.1} depth={3.4} /><BankBuilding position={spots.bank} /><Label position={[-4.25, 4.4, -2.9]} title="Bank" value={money(state.cash)} tone="cash" />
+    {(['technology', 'energy', 'retail'] as Sector[]).map(sector => <SectorBuilding key={sector} sector={sector} value={state.investmentsBySector[sector]} reduced={reduced} showLabel={state.step >= 3} />)}
+    <Plot position={spots.goal} tint="#cbb989" width={3.5} depth={2.9} /><Construction position={spots.goal} progress={state.goalSavings / 1500} />
+    <Label position={[2.6, 3.3, 4.2]} title="Goal" value={`Tuition · ${Math.round(state.goalSavings / 1500 * 100)}% funded`} tone="goal" />
+    <Maya reduced={reduced} /><Turbine reduced={reduced} /><StreetLife />
+    {state.creditCardDebt > 0 && <><Line points={[[1, .6, -.8], [3.8, .8, -.1], [6.35, 1.6, 1.3]]} color="#ff596c" lineWidth={9} transparent opacity={.7} /><Line points={[[1, .6, -.8], [3.8, .8, -.1], [6.35, 1.6, 1.3]]} color="#ffd6ad" lineWidth={2} /><group position={spots.debt}><mesh position={[0, .35, 0]} castShadow><boxGeometry args={[.65,.7,.7]} /><meshStandardMaterial color="#e75b64" /></mesh></group></>}
+    <Label position={[6.35, 2.7, 1.3]} title="Credit Card Debt" value={state.creditCardDebt ? `Debt drain · ${money(state.creditCardDebt)}` : '$0 · No balance'} tone="debt" />
+    {trees.map(([x,z],i)=><Tree key={i} position={[x,.16,z]} size={.75+(i%4)*.15} pine={i%3===0} variant={i} />)}
+    {[[-5.9,3], [5.7,4.8], [2.5,-5.6],[-6.2,-1],[6.6,0]].map(([x,z],i)=><Model key={i} name="rock" size={.25+i%2*.1} position={[x,.15,z]} />)}
+    <SkyCloud position={[-6.5, 6, -4.5]} scale={1.05} reduced={reduced} /><SkyCloud position={[5.5, 7.8, -5]} scale={1.45} reduced={reduced} />
     <Effects key={trigger} effects={state.effects} reduced={reduced} />
     {state.month === 10 && <Storm key={trigger} state={state} reduced={reduced} />}
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.77, 0]} receiveShadow><planeGeometry args={[200, 200]} /><shadowMaterial transparent opacity={0.12} /></mesh>
   </>;
 }
 class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { failed: boolean }> {
@@ -136,5 +148,5 @@ export default function Town({ state, reduced, zoom }: { state: GameState; reduc
   const [available] = useState(() => { try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; } });
   const fallback = <TextTown state={state} />;
   if (!available) return fallback;
-  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.8]} camera={{ position: [13, 13, 17], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} aria-label="A miniature town showing your bank, home shield, debt drain, investment sectors, and tuition goal"><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Growing your little town…</div>}</SceneBoundary>;
+  return <SceneBoundary fallback={fallback}><Canvas orthographic shadows dpr={[1, 1.5]} camera={{ position: [13, 12, 17], near: 0.1, far: 200, zoom: 40 }} gl={{ antialias: true, alpha: true }} fallback={fallback} aria-label="A miniature town showing your bank, home shield, debt drain, investment sectors, and tuition goal"><Suspense fallback={null}><World state={state} reduced={reduced} zoom={zoom} onReady={() => setReady(true)} /></Suspense></Canvas>{!ready && <div className="scene-loading"><span className="loading-leaf">✦</span>Growing your little town…</div>}</SceneBoundary>;
 }

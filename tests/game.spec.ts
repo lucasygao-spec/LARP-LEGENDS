@@ -11,7 +11,7 @@ test('renders the real town, plays a full year, compares replay, and persists th
   await page.goto('/');
   await expect(page.getByRole('heading', { name: /Your first paycheque/ })).toBeVisible();
   await expect(page.locator('.town-label').filter({ hasText: 'Your home' })).toBeVisible({ timeout: 30000 });
-  await expect(page.getByRole('button', { name: 'Make this choice' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Make this choice' })).toBeHidden();
   await page.screenshot({ path: 'artifacts/life-ledger-desktop.png', fullPage: true });
   await page.keyboard.press('1'); await expect(page.getByRole('button', { name: /Give future you/ })).toHaveAttribute('aria-pressed', 'true');
   await decision(page, 'Give future you');
@@ -45,6 +45,14 @@ test('mobile layout, ledger, assumptions, sound, and cash-goal branch work', asy
   await expect(page.getByRole('button', { name: /Bring your investments home/ })).toBeDisabled(); await decision(page, 'Give your plan more time');
   await page.getByRole('tab', { name: 'Your ledger' }).click(); await expect(page.getByRole('heading', { name: 'Every dollar has a story.' })).toBeVisible();
   await page.getByRole('button', { name: 'How this simulation works' }).click(); await expect(page.getByText('Fixed fictional markets', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: /Reduce motion/ }).click();
+  await expect(page.getByRole('button', { name: /Reduce motion/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: /Game sounds/ })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: /Game sounds/ }).click();
+  await page.getByRole('button', { name: 'Close dialog' }).click();
+  await expect(page.getByRole('button', { name: 'Enable sounds' })).toBeVisible();
 });
 test('the complete game works without WebGL or storage', async ({ page }) => {
   await page.addInitScript(() => { const original = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) { if (type.includes('webgl')) return null; return original.call(this, type as '2d', ...args); } as typeof HTMLCanvasElement.prototype.getContext; Storage.prototype.getItem = () => { throw new Error('Blocked'); }; Storage.prototype.setItem = () => { throw new Error('Blocked'); }; });

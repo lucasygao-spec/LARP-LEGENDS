@@ -14,7 +14,9 @@ Models and interface sounds are Kenney CC0 assets. Original license texts are pr
 
 Model files are normalized and positioned at runtime. External texture references are renamed by pack, preserving each pack's original texture. No Poly Pizza models are used.
 
-Custom scene geometry: island, plots, emergency dome, construction scaffold, turbine rotor, coin trails, debt drain, clouds and lightning.
+The current UI uses custom geometry for the terracotta-roof home, classical bank, tuition construction site and crane, trees, car, streetlights, rocky island, shoreline, and clouds. Their earlier GLB counterparts remain in the asset folder. Roads, sector buildings, Maya, rocks, and the solar field still use the selected Kenney models.
+
+Custom financial effects: emergency dome, coin trails, debt drain, and storm lightning. The sidebar portrait is an original inline SVG illustration.
 
 DM Sans and Manrope are bundled from the Google Fonts repository under the SIL Open Font License; the license files ship alongside asset licenses.
 
