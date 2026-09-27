@@ -7,7 +7,6 @@
     "entrypoint": "dist/worker.js"
   },
   "assets": {
-    "directory": "dist",
-    "binding": "ASSETS"
+    "directory": "dist"
   }
 }
