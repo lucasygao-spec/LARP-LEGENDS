@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc -b && vite build",
+    "build:site": "npm run build && node scripts/build-site.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "start": "node server/index.mjs",
     "test": "tsx --test src/engine.test.ts server/stocks.test.mjs",
