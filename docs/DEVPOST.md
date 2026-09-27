@@ -1,31 +1,33 @@
-# Investly — Your first investing journey
+# Investly — Your first money story
 
 ## Tagline
 
-Start at 18. Build a habit. See your money decisions come to life.
+A first job. A surprise bill. Your first investment. See what each choice changes.
 
 ## What it does
 
-Follow Maya through a simple year of financial firsts: choose university, work, or a gap year; receive a birthday gift; open a simulated TFSA, FHSA, or RRSP; and make a first ETF or stock investment.
+Start at 18, choose a character, and pick university or a BizTech mascot job. Decide whether to build a $200 emergency cushion—then meet a $200 medical bill. An empty fund means a call to Mom.
 
-An extra $500 tests the balance between investing, savings, and debt. A $700 car repair shows why emergency savings matter. A raise creates a recurring monthly plan, and the portfolio then progresses through six months of changing markets. Finish by choosing a First Home, Car, or Puppy goal and see how far your investments have taken you.
+A $1,000 birthday gift introduces account choices, savings, and a fictional company called BizTech. A raise becomes an investing habit. Explore managed apps, advisors, self-directed brokerages, or buying an ETF, then compare VAB, XUS, and QQQ with short Learn More explanations.
 
-The persistent dashboard shows age, month, cash, investments, debt, emergency fund, account, and goal. In the 3D town, savings protect a home, coins travel into investments, market losses bring a storm, and debt drains money. Each decision includes a short explanation and one financial lesson. Replay and compare with the previous completed year.
+Watch the portfolio move, then choose whether to pursue a Miami goal or change investment risk. The six-month journey ends with a financial summary and replay comparison. Click a choice to apply it immediately; short feedback explains each result. The unexpected medical bill appears in a centered panel over a full-screen backdrop.
+
+The left-side dashboard shows cash, general savings, emergency savings, investments, and debt. The right-side Kenney commercial city responds with a savings shield, investment buildings, coins, and market storms. The city stays free of floating labels. Keyboard input, reduced motion, mobile layout, and a text fallback keep the story usable.
 
 ## How we built it
 
-React and TypeScript drive the story and dashboard. React Three Fiber, Three.js, and selected Kenney assets render the town. Motion animates balances, transitions, and an interactive net-worth chart. A pure financial engine controls all money; the scene only displays results. Tests reconcile every valid story branch to the cent.
+React and TypeScript handle story state and the dashboard. A pure engine calculates every transfer, return, expense, and student-loan interest charge. Three.js / React Three Fiber render the city and selected avatar. Motion animates financial values and a ledger chart. Browser storage retains the previous completed pitch.
 
-The market adapter accepts validated monthly historical returns from a configurable API. **No existing market endpoint or credentials were present in this checkout. The default demo uses visibly labelled fictional sample data with both gains and losses.** Connecting the intended provider requires its endpoint and normalization to the documented format. This is not a claim of live market access or authenticated Investly integration.
+The engine tests reconcile all substantive story paths to the cent. Browser checks exercise onboarding, the actual city, empty-fund assistance, ETF learning, full-screen alerts, replay, mobile, and unavailable WebGL/storage.
 
-The complete journey supports keyboard input, reduced motion, mobile layout, and a text fallback when 3D cannot load. Browser storage retains the last completed run without login.
+## Market and financial assumptions
 
-## Lessons
+The default pitch uses visibly labelled fictional market returns. A configurable historical-data adapter accepts separate VAB, XUS, and QQQ monthly returns; the intended provider endpoint has not been supplied. BizTech always remains fictional. No live market connection or actual Investly brokerage integration is claimed.
 
-Account choice and investment choice are different decisions. Diversification changes exposure without removing risk. Emergency savings protect investments from forced sales. Recurring contributions build a habit, but returns remain uncertain. Goals need an appropriate time horizon.
+The source script’s annual-return ranges are presented as pitch illustrations, not verified historical CAGR or guaranteed outcomes. A $30,000 salary’s 10% raise is correctly represented as $250/month. Selecting a Miami penthouse sets a savings goal; it does not invent enough money to buy one.
 
 ## Submission materials
 
-Use the current `artifacts/investly-*.png` screenshots and the recording instructions in `docs/DEMO.md`. Previous `life-ledger-*` screenshots/video depict an older flow. Add deployed app, repository, team, and hosted video URLs before submitting. Select the Investly prize opt-in in the actual Devpost form and verify the event's requirements there.
+Use `artifacts/pitch-*.png` screenshots. Generate and review the new recording following `docs/DEMO.md`; older videos show earlier scripts. Add deployed app, repository, team, and hosted video URLs. Select the Investly prize opt-in and verify requirements in the actual Devpost form before publishing.
 
-All accounts and transactions are simulated. Kenney assets and sounds are CC0; font licenses are OFL. Credits and original licenses are included in the repository.
+All accounts, balances, and transactions are simulated. Asset credits and original licenses are included in the repository.

@@ -1,8 +1,109 @@
 [
- {"month":1,"title":"Choose your starting path","body":"You just graduated. What’s next?","lesson":"Your starting circumstances affect the financial choices available to you.","choices":[{"id":"university","title":"University","description":"$5,000 student debt · $100/month left after essentials"},{"id":"work","title":"Start Working","description":"$400/month left after essentials"},{"id":"gap","title":"Gap Year","description":"Limited income · spend $100/month from cash"}]},
- {"month":2,"title":"A birthday boost","body":"Happy 18th birthday! Your family gives you $1,000. What do you want to do with it?","lesson":"The account you invest through matters, not just what you invest in.","choices":[{"id":"open","title":"Start Investing","description":"Open an account; choose an investment next month"},{"id":"save","title":"Put it in Savings","description":"Move the $1,000 gift to your emergency fund"},{"id":"spend","title":"Spend It","description":"Enjoy the gift today · spend $1,000"}]},
- {"month":3,"title":"Your first investment","body":"Give your money a job. Where should it go?","lesson":"Investments fluctuate. A short-term loss does not automatically mean an investment was a bad decision.","choices":[{"id":"etf","title":"Buy a diversified ETF","description":"Recommended demo path · spread your exposure"},{"id":"stocks","title":"Buy individual stocks","description":"One fictional company · more concentrated risk"},{"id":"cash","title":"Keep it as cash","description":"Stay accessible · no market exposure"}]},
- {"month":4,"title":"An extra $500","body":"You have an extra $500 this month. What do you want to do?","lesson":"Good financial planning balances investing, savings, and debt.","choices":[{"id":"invest","title":"Invest it","description":"Add $500 to a diversified ETF"},{"id":"emergency","title":"Build an emergency fund","description":"Set aside $500 for the unexpected"},{"id":"pay","title":"Pay down debt","description":"Pay up to $500 · keep any remainder in cash"}]},
- {"month":5,"title":"Life happens","body":"Your car needs a $700 repair. Let’s keep you moving.","lesson":"Emergency savings can prevent you from selling investments when unexpected expenses happen.","choices":[]},
- {"month":6,"title":"A raise. A new habit.","body":"You got a raise! You now have an extra $100 every month. Give it a plan, starting next month.","lesson":"Consistent investing can matter more than trying to perfectly time the market.","choices":[{"id":"auto-invest","title":"Automatically invest $100/month","description":"Recurring contribution → diversified ETF"},{"id":"auto-save","title":"Save $100/month","description":"Build your emergency fund automatically"},{"id":"auto-debt","title":"Pay $100/month toward debt","description":"After debt is cleared, keep the rest in cash"},{"id":"auto-split","title":"Split the money","description":"$50 to an ETF · $50 to your emergency fund"}]}
+  {
+    "month": 1,
+    "title": "You’re 18. What’s next?",
+    "body": "Your next chapter starts here.",
+    "lesson": "Your starting circumstances shape the choices available to you.",
+    "choices": [
+      {
+        "id": "university",
+        "title": "Uni",
+        "description": "Study, work part-time, and take on tuition debt"
+      },
+      {
+        "id": "work",
+        "title": "Start working",
+        "description": "BizTech mascot · $30,000/year"
+      }
+    ]
+  },
+  {
+    "month": 2,
+    "title": "Give yourself a cushion?",
+    "body": "Add $200 from your pay to an emergency fund?",
+    "lesson": "An emergency fund keeps a small surprise from becoming a bigger money problem.",
+    "choices": [
+      {
+        "id": "save-emergency",
+        "title": "Yes — save $200",
+        "description": "Move $200 from cash to your emergency fund"
+      },
+      {
+        "id": "skip-emergency",
+        "title": "No — keep it in cash",
+        "description": "Keep the money available today"
+      }
+    ]
+  },
+  {
+    "month": 3,
+    "title": "Unexpected expense!",
+    "body": "You snuck into a frat party and got frat flu! Medical bills are $200.",
+    "lesson": "Emergency savings give you options when life gets expensive.",
+    "choices": [
+      {
+        "id": "use-emergency",
+        "title": "Take money from my emergency fund",
+        "description": "Use your cushion to cover the $200 bill"
+      },
+      {
+        "id": "ask-mom",
+        "title": "Call Mom to ask for money :(",
+        "description": "Ask for a $200 family gift to cover the bill"
+      }
+    ]
+  },
+  {
+    "month": 4,
+    "title": "Happy birthday!",
+    "body": "You got $1,000. What would you like to do with it?",
+    "lesson": "An account is a container; choosing an investment is a separate decision.",
+    "choices": [
+      {
+        "id": "open",
+        "title": "Open an account",
+        "description": "Choose TFSA, RRSP, or FHSA · keep the gift ready to invest"
+      },
+      {
+        "id": "biztech",
+        "title": "Buy BizTech",
+        "description": "Invest the $1,000 gift in one fictional company"
+      },
+      {
+        "id": "birthday-savings",
+        "title": "Put it in a savings account",
+        "description": "Save $1,000 separately from your emergency fund"
+      }
+    ]
+  },
+  {
+    "month": 5,
+    "title": "You got a raise!",
+    "body": "A 10% raise on $30,000/year gives you an extra $250 each month. How would you like to invest?",
+    "lesson": "A raise can fund your future before it becomes a new spending habit.",
+    "choices": []
+  },
+  {
+    "month": 6,
+    "title": "Your money made a move",
+    "body": "What would you like to do with this money?",
+    "lesson": "Sometimes taking risk helps. Not always. A good month is not a promise about the next one.",
+    "choices": [
+      {
+        "id": "penthouse",
+        "title": "Buy a penthouse in Miami",
+        "description": "Not quite penthouse money? Start a $1,000,000 demo goal"
+      },
+      {
+        "id": "higher-risk",
+        "title": "Continue investing in high risk",
+        "description": "Move your portfolio to QQQ for this demo"
+      },
+      {
+        "id": "lower-risk",
+        "title": "Invest in low risk",
+        "description": "Move your portfolio to VAB · lower risk still has risk"
+      }
+    ]
+  }
 ]

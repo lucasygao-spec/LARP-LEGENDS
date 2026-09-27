@@ -1,14 +1,86 @@
 [
-  {"month":1,"etf":0,"stocks":0},
-  {"month":2,"etf":0.012,"stocks":0.03},
-  {"month":3,"etf":-0.008,"stocks":-0.025},
-  {"month":4,"etf":0.021,"stocks":0.06},
-  {"month":5,"etf":-0.045,"stocks":-0.16},
-  {"month":6,"etf":0.015,"stocks":0.04},
-  {"month":7,"etf":0.008,"stocks":-0.02},
-  {"month":8,"etf":-0.023,"stocks":-0.08},
-  {"month":9,"etf":0.031,"stocks":0.075},
-  {"month":10,"etf":-0.012,"stocks":-0.04},
-  {"month":11,"etf":0.018,"stocks":0.035},
-  {"month":12,"etf":0.009,"stocks":-0.01}
+  {
+    "month": 1,
+    "VAB": 0,
+    "XUS": 0,
+    "QQQ": 0,
+    "BIZTECH": 0
+  },
+  {
+    "month": 2,
+    "VAB": 0.002,
+    "XUS": 0.01,
+    "QQQ": 0.02,
+    "BIZTECH": 0.03
+  },
+  {
+    "month": 3,
+    "VAB": -0.004,
+    "XUS": -0.01,
+    "QQQ": -0.03,
+    "BIZTECH": -0.07
+  },
+  {
+    "month": 4,
+    "VAB": 0.001,
+    "XUS": 0.02,
+    "QQQ": 0.04,
+    "BIZTECH": 0.05
+  },
+  {
+    "month": 5,
+    "VAB": 0.003,
+    "XUS": -0.012,
+    "QQQ": -0.025,
+    "BIZTECH": -0.06
+  },
+  {
+    "month": 6,
+    "VAB": 0.004,
+    "XUS": 0.035,
+    "QQQ": 0.08,
+    "BIZTECH": 0.12
+  },
+  {
+    "month": 7,
+    "VAB": -0.006,
+    "XUS": -0.055,
+    "QQQ": -0.12,
+    "BIZTECH": -0.22
+  },
+  {
+    "month": 8,
+    "VAB": 0.002,
+    "XUS": 0.008,
+    "QQQ": -0.03,
+    "BIZTECH": -0.04
+  },
+  {
+    "month": 9,
+    "VAB": 0.003,
+    "XUS": 0.02,
+    "QQQ": 0.04,
+    "BIZTECH": 0.06
+  },
+  {
+    "month": 10,
+    "VAB": -0.002,
+    "XUS": -0.01,
+    "QQQ": -0.02,
+    "BIZTECH": -0.03
+  },
+  {
+    "month": 11,
+    "VAB": 0.001,
+    "XUS": 0.015,
+    "QQQ": 0.025,
+    "BIZTECH": 0.04
+  },
+  {
+    "month": 12,
+    "VAB": 0.002,
+    "XUS": 0.006,
+    "QQQ": 0.01,
+    "BIZTECH": 0.02
+  }
 ]

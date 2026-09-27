@@ -6,7 +6,7 @@ import { Line, useAnimations, useGLTF } from '@react-three/drei';
 import { Box3, Group, MathUtils, Mesh, Plane, SkinnedMesh, Vector3 } from 'three';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { Effect, GameState, Sector } from './engine';
-import { goalProgress, money, portfolio, townSectors } from './engine';
+import { goalProgress, money, portfolio, townSectors, totalDebt } from './engine';
 import { CityBlocks, StreetLife, Tree } from './TownScenery';
 
 type Point = [number, number, number];
@@ -305,7 +305,7 @@ function World({ state, reduced, zoom, avatarId, onReady }: { state: GameState; 
     <Model name="retail" position={[-.65, .18, 0]} size={2.9} rotation={Math.PI / 2} />
     <Model name="city-home" position={[1.1, .18, .65]} size={1.35} />
     <PlayerCharacter reduced={reduced} avatarId={avatarId} path={playerPath} positionRef={playerPosition} /><StreetLife />
-    {state.debt > 0 && <><Line points={[[-5.6, .4, 4.8], [-7.2, .35, 3.4], [-7.1, .35, 1.4]]} color="#e96c79" lineWidth={5} transparent opacity={.65} /><mesh position={[-7.1, .3, 1.4]}><boxGeometry args={[.35,.4,.35]} /><meshStandardMaterial color="#d96170" /></mesh></>}
+    {totalDebt(state) > 0 && <><Line points={[[-5.6, .4, 4.8], [-7.2, .35, 3.4], [-7.1, .35, 1.4]]} color="#e96c79" lineWidth={5} transparent opacity={.65} /><mesh position={[-7.1, .3, 1.4]}><boxGeometry args={[.35,.4,.35]} /><meshStandardMaterial color="#d96170" /></mesh></>}
     {trees.map(([x,z],i)=><Tree key={i} position={[x,.18,z]} size={.7+(i%3)*.1} variant={i} />)}
     <Effects key={trigger} effects={state.effects} reduced={reduced} />
     {state.monthlyGrowth < 0 && <Storm key={trigger} state={state} reduced={reduced} />}
@@ -318,7 +318,7 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 function TextTown({ state }: { state: GameState }) {
-  return <div className="text-town"><span className="eyebrow">Your town, in words</span><h3>Every choice still counts.</h3><p>The 3D view is unavailable. Your full game and financial results are ready to play.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(state.debt)}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
+  return <div className="text-town"><span className="eyebrow">Your town, in words</span><h3>Every choice still counts.</h3><p>The 3D view is unavailable. Your full game and financial results are ready to play.</p><div><span>Bank <b>{money(state.cash)}</b></span><span>General savings <b>{money(state.savings)}</b></span><span>Home shield <b>{money(state.emergencySavings)}</b></span><span>Debt drain <b>{money(totalDebt(state))}</b></span><span>Sector buildings <b>{money(portfolio(state))}</b></span><span>Goal building <b>{Math.round(goalProgress(state) * 100)}%</b></span></div></div>;
 }
 export default function Town({ state, reduced, zoom, avatarId, avatarName }: { state: GameState; reduced: boolean; zoom: number; avatarId: string; avatarName: string }) {
   const [ready, setReady] = useState(false);

@@ -9,6 +9,10 @@ const browser = await chromium.launch({ channel: 'chrome', args: ['--use-angle=s
 const context = await browser.newContext({ viewport: { width: 1440, height: 1160 }, recordVideo: { dir: 'artifacts/raw-video', size: { width: 1440, height: 1160 } } });
 const page = await context.newPage();
 await page.goto('http://127.0.0.1:5173');
+await page.getByLabel('Your name', { exact: true }).fill('Maya');
+await page.getByRole('radio', { name: 'Generic Female', exact: true }).click();
+await page.getByRole('radio', { name: /Level 1/ }).click();
+await page.getByRole('button', { name: 'Start', exact: true }).click();
 await page.locator('[data-city-ready="true"]').waitFor();
 await page.evaluate(() => {
   const caption = document.createElement('div'); caption.id = 'demo-caption';
@@ -18,42 +22,30 @@ await page.evaluate(() => {
 const started = Date.now();
 const caption = text => page.evaluate(text => { document.getElementById('demo-caption').textContent = text; }, text);
 const at = async seconds => { const remaining = started + seconds * 1000 - Date.now(); if (remaining > 0) await page.waitForTimeout(remaining); };
-const pick = async name => { await page.getByRole('button', { name: new RegExp(name) }).click(); await page.getByRole('button', { name: 'Make this choice' }).click(); };
-const next = async () => {
-  await page.getByRole('button', { name: /Continue to Month|Choose my financial goal/ }).click();
-  if (await page.getByRole('dialog', { name: 'An unexpected expense' }).count()) await page.getByRole('button', { name: 'See my options' }).click();
-};
+const pick = name => page.getByRole('button', { name, exact: true }).click();
+const next = () => page.getByRole('button', { name: 'Continue', exact: true }).click();
 const decision = async name => { await pick(name); await next(); };
-
-await caption('Meet Maya, 18. Start with $1,000 and choose your path.');
-await at(5); await decision('Start Working');
-await caption('A birthday gift. An account. Your first investing decision.');
-await pick('Start Investing');
-await page.getByRole('button', { name: 'TFSA', exact: true }).click();
-await page.getByRole('button', { name: 'Open this account' }).click();
-await next(); await at(15); await decision('Buy a diversified ETF');
-await caption('A diversified ETF spreads exposure. Sample markets move both ways.');
-await at(22); await pick('Build an emergency fund');
-await caption('Saving $500 builds a shield around your home.');
-await page.screenshot({ path: 'artifacts/investly-shield.png', fullPage: true });
-await at(28); await next(); await pick('Cover the repair');
-await caption('A $700 repair: $500 savings + $200 cash. Investments stay untouched.');
-await at(35); await next(); await pick('Automatically invest');
-await caption('Recurring investment created: $100 a month into an ETF.');
-await next();
-for (let month = 7; month <= 12; month++) await decision('Keep my plan going');
-await page.getByRole('button', { name: 'First Home', exact: true }).click();
-await page.getByRole('button', { name: 'Set my goal' }).click();
-await page.getByRole('heading', { name: 'Your future has a starting point.' }).waitFor();
-await page.locator('.savings-goal').scrollIntoViewIfNeeded();
-await caption('Your contributions, market growth, and progress toward a first home.');
-await at(56); await caption('Investly makes your first investing journey visible.');
-await at(61);
-await page.waitForTimeout(5000); // Let the final goal and caption reach recorded frames.
+await caption('Age 18. A first job. Your money story starts here.');
+await at(4); await decision('Start working'); await decision('No — keep it in cash');
+await caption('A $200 medical bill. An empty emergency fund. Time to call Mom.');
+await pick('Take money from my emergency fund'); await decision('Call Mom to ask for money :(');
+await at(15); await pick('Open an account'); await pick('TFSA'); await next();
+await caption('A birthday gift opens an account. A raise can build an investing habit.');
+await pick('Buy one ETF'); await pick('QQQ');
+await at(29); await next();
+await caption('Watch the monthly market change. More risk does not always pay off.');
+await at(35); await pick('Buy a penthouse in Miami');
+await caption('A dream becomes a goal: investments move to savings, dollar for dollar.');
+await at(43); await page.getByRole('button', { name: 'See my result' }).click();
+await page.getByRole('heading', { name: 'Your choices added up.' }).waitFor();
+await caption('Six months of choices. One clear picture of your finances.');
+await at(50); await page.getByRole('button', { name: 'Compare your paths' }).click();
+await at(57); await caption('Investly makes your money choices visible.');
+await at(61); await page.waitForTimeout(5000);
 const video = page.video(); await context.close(); await browser.close();
 const source = await video.path();
 const encoder = path.join(homedir(), 'Library/Caches/ms-playwright/ffmpeg-1011/ffmpeg-mac');
-const output = 'artifacts/investly-demo.webm';
+const output = 'artifacts/pitch-demo.webm';
 // Preserve the entire journey, including the final goal, within one minute.
 const probe = spawnSync(encoder, ['-i', source], { encoding: 'utf8' });
 const duration = probe.stderr?.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
