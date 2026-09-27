@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { choose, choicesFor, continueGame, disabledReason, initialState, netWorth, portfolio, round, totalDebt, goalFunds, penthouseShortfall, penthouseRentalCost } from './engine';
+import { choose, choicesFor, continueGame, disabledReason, initialState, netWorth, portfolio, round, totalDebt, goalFunds, penthouseShortfall, penthouseRentalCost, homeUpgradeUnlocked } from './engine';
 import type { GameState } from './engine';
 import { loadMarketFeed, parseMarketFeed, sampleFeed } from './market';
 import { HOLDINGS, METHODS } from './investments';
@@ -110,4 +110,23 @@ test('each real ETF has its own API return and BizTech remains simulated',async(
 test('API failures fall back to visibly labelled samples',async()=>{
   for(const fetcher of [async()=>{throw new Error('offline');},async()=>new Response('{}'),async()=>new Response('',{status:503})]) {const feed=await loadMarketFeed('/api/market',fetcher as typeof fetch);assert.equal(feed.source,'sample');assert.match(feed.notice,/unavailable or invalid/);}
   assert.equal((await loadMarketFeed()).source,'sample');
+});
+
+test('home upgrades only after the raise is invested in an ETF and resets on replay', () => {
+  const before = play(['work', 'skip-emergency', 'ask-mom', 'biztech']);
+  assert.equal(homeUpgradeUnlocked(before), false, 'birthday stock purchase does not unlock the house');
+  const method = choose(before, 'one-etf');
+  const account = choose(method, 'TFSA');
+  assert.equal(homeUpgradeUnlocked(method), false);
+  assert.equal(homeUpgradeUnlocked(account), false, 'opening an account is not an ETF investment');
+  for (const fund of ['VAB', 'XUS', 'QQQ']) {
+    const invested = choose(account, fund);
+    assert.equal(homeUpgradeUnlocked(invested), true);
+    assert.equal(invested.cash, account.cash - 250, 'the home reward charges no additional money');
+    check(invested);
+    const final = choose(choose(continueGame(invested), 'penthouse'), 'rent-penthouse');
+    assert.equal(final.cash, 0);
+    assert.equal(homeUpgradeUnlocked(final), true, 'the upgrade survives spending the remaining cash');
+  }
+  assert.equal(homeUpgradeUnlocked(initialState()), false);
 });
