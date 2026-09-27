@@ -25,8 +25,13 @@ test('town, account learning, ETF journey, recurring growth and persisted compar
   await expect(page.getByRole('heading', { name: 'Choose your starting path' })).toBeVisible();
   await expect(page.locator('.profile')).toContainText('Age 18');
   await expect(page.locator('.stat.cash')).toContainText('$1,000');
-  await expect(page.locator('.town-label').filter({ hasText: 'Your home' })).toBeVisible({timeout: 30000});
+  await expect(page.locator('[data-city-ready="true"]')).toBeVisible({timeout: 30000});
+  await expect(page.locator('.town-label, .building-sign')).toHaveCount(0);
   await page.screenshot({path: 'artifacts/investly-desktop.png', fullPage: true});
+  await page.setViewportSize({width:390,height:844});
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
+  await page.screenshot({path:'artifacts/investly-city-mobile.png',fullPage:true});
+  await page.setViewportSize({width:1440,height:1050});
   await page.keyboard.press('2'); await expect(page.getByRole('button', {name:'Start Working', exact:true})).toHaveAttribute('aria-pressed','true');
   await decision(page, 'Start Working'); await pick(page, 'Start Investing');
   await page.getByRole('button', {name:'Learn more about FHSA'}).click(); await expect(page.getByRole('dialog')).toContainText('first home'); await page.keyboard.press('Escape');
@@ -34,7 +39,7 @@ test('town, account learning, ETF journey, recurring growth and persisted compar
   await expect(page.locator('.account-status')).toHaveText('TFSA · Open'); await expect(page.locator('.profile')).toContainText('Month 2 / 12'); await next(page);
   await decision(page,'Buy a diversified ETF'); await expect(page.locator('.stat.investment')).toContainText('$1,021');
   await expect(page.getByRole('button',{name:'Pay down debt',exact:true})).toBeDisabled();
-  await pick(page, 'Build an emergency fund'); await expect(page.locator('.town-label').filter({hasText:'$500 protected'})).toBeVisible(); await page.screenshot({path:'artifacts/investly-shield.png',fullPage:true}); await next(page);
+  await pick(page, 'Build an emergency fund'); await expect(page.locator('.stat.savings')).toContainText('$500'); await expect(page.locator('.town-label')).toHaveCount(0); await page.screenshot({path:'artifacts/investly-shield.png',fullPage:true}); await next(page);
   await expect(page.locator('.portfolio-panel .negative')).toHaveCount(2);
   await pick(page,'Cover the repair'); await expect(page.locator('.result-description')).toContainText('$500 from your emergency fund + $200 cash'); await next(page);
   await pick(page,'Automatically invest $100/month'); await expect(page.locator('.result-description')).toContainText('Recurring Investment Created'); await next(page);

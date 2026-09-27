@@ -5,7 +5,7 @@ Models and interface sounds are Kenney CC0 assets. Original license texts are pr
 | Pack | Selected models / use |
 | --- | --- |
 | [City Kit: Suburban](https://kenney.nl/assets/city-kit-suburban) | building-type-a → Maya's home |
-| [City Kit: Commercial](https://kenney.nl/assets/city-kit-commercial) | building-c → bank; building-skyscraper-a → technology; building-f → retail; building-b → financial goal |
+| [City Kit: Commercial](https://kenney.nl/assets/city-kit-commercial) | building-c → bank; building-skyscraper-a → technology; building-f → retail; building-b → financial goal; building-a → home; building-n → apartments; building-skyscraper-b → office; building-j → shops |
 | [City Kit: Industrial](https://kenney.nl/assets/city-kit-industrial) | building-a → energy factory; solar-panel-landscape-group → solar field |
 | [City Kit: Roads](https://kenney.nl/assets/city-kit-roads) | road-straight and road-crossroad, reused |
 | [Blocky Characters](https://kenney.nl/assets/blocky-characters) | character-f → Maya |
@@ -14,7 +14,7 @@ Models and interface sounds are Kenney CC0 assets. Original license texts are pr
 
 Model files are normalized and positioned at runtime. External texture references are renamed by pack, preserving each pack's original texture. No Poly Pizza models are used.
 
-The current UI uses custom geometry for the terracotta-roof home, classical bank, goal construction site and crane, trees, car, streetlights, rocky island, shoreline, and clouds. Their earlier GLB counterparts remain in the asset folder. Roads, sector buildings, Maya, rocks, and the solar field still use the selected Kenney models.
+The current scene uses the Commercial pack for all city buildings, including the bank, home, investment districts, and goal building. Shared models reuse their original texture atlas. Custom geometry supplies a flat city base, sidewalks, road markings, crosswalks, a small park, sparse trees, cars, and streetlights. Floating labels and HTML building signs are removed. The financial dashboard and text fallback retain the explanations. Earlier unused island and suburban GLB assets remain in the asset folder but are not loaded by the scene.
 
 Custom financial effects: emergency dome, coin trails, debt drain, and storm lightning. The sidebar portrait is an original inline SVG illustration.
 

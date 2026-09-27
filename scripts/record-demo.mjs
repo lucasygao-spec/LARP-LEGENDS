@@ -9,7 +9,7 @@ const browser = await chromium.launch({ channel: 'chrome', args: ['--use-angle=s
 const context = await browser.newContext({ viewport: { width: 1440, height: 1160 }, recordVideo: { dir: 'artifacts/raw-video', size: { width: 1440, height: 1160 } } });
 const page = await context.newPage();
 await page.goto('http://127.0.0.1:5173');
-await page.locator('.town-label').filter({ hasText: 'Your home' }).waitFor();
+await page.locator('[data-city-ready="true"]').waitFor();
 await page.evaluate(() => {
   const caption = document.createElement('div'); caption.id = 'demo-caption';
   caption.style.cssText = 'position:fixed;bottom:12px;left:50%;transform:translateX(-50%);z-index:1000;background:#294b39f5;color:#fffef5;padding:14px 26px;border-radius:10px;box-shadow:0 4px 24px #23382722;font:500 16px Manrope,sans-serif;text-align:center;width:max-content;max-width:90%;pointer-events:none';
