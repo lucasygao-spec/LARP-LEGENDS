@@ -13,20 +13,20 @@
       {
         "id": "work",
         "title": "Start working",
-        "description": "BizTech mascot · $30,000/year"
+        "description": "BizTech mascot · CA$30,000.00/year"
       }
     ]
   },
   {
     "month": 2,
     "title": "Give yourself a cushion?",
-    "body": "Add $200 from your pay to an emergency fund?",
+    "body": "Add CA$200.00 from your pay to an emergency fund?",
     "lesson": "An emergency fund keeps a small surprise from becoming a bigger money problem.",
     "choices": [
       {
         "id": "save-emergency",
-        "title": "Yes — save $200",
-        "description": "Move $200 from cash to your emergency fund"
+        "title": "Yes — save CA$200.00",
+        "description": "Move CA$200.00 from cash to your emergency fund"
       },
       {
         "id": "skip-emergency",
@@ -38,25 +38,25 @@
   {
     "month": 3,
     "title": "Unexpected expense!",
-    "body": "You snuck into a frat party and got frat flu! Medical bills are $200.",
+    "body": "You snuck into a frat party and got frat flu! Medical bills are CA$200.00.",
     "lesson": "Emergency savings give you options when life gets expensive.",
     "choices": [
       {
         "id": "use-emergency",
         "title": "Take money from my emergency fund",
-        "description": "Use your cushion to cover the $200 bill"
+        "description": "Use your cushion to cover the CA$200.00 bill"
       },
       {
         "id": "ask-mom",
         "title": "Call Mom to ask for money :(",
-        "description": "Ask for a $200 family gift to cover the bill"
+        "description": "Ask for a CA$200.00 family gift to cover the bill"
       }
     ]
   },
   {
     "month": 4,
     "title": "Happy birthday!",
-    "body": "You got $1,000. What would you like to do with it?",
+    "body": "You got CA$1,000.00. What would you like to do with it?",
     "lesson": "An account is a container; choosing an investment is a separate decision.",
     "choices": [
       {
@@ -67,19 +67,19 @@
       {
         "id": "biztech",
         "title": "Buy BizTech",
-        "description": "Invest the $1,000 gift in one company"
+        "description": "Invest the CA$1,000.00 gift in one company"
       },
       {
         "id": "birthday-savings",
         "title": "Put it in a savings account",
-        "description": "Save $1,000 separately from your emergency fund"
+        "description": "Save CA$1,000.00 separately from your emergency fund"
       }
     ]
   },
   {
     "month": 5,
     "title": "You got a raise!",
-    "body": "A 10% raise on $30,000/year gives you an extra $250 each month. How would you like to invest?",
+    "body": "A 10% raise on CA$30,000.00/year gives you an extra CA$250.00 each month. How would you like to invest?",
     "lesson": "A raise can fund your future before it becomes a new spending habit.",
     "choices": []
   },
@@ -92,7 +92,7 @@
       {
         "id": "penthouse",
         "title": "Buy a penthouse in Miami",
-        "description": "Check your shortfall against a $1,000,000 penthouse"
+        "description": "Check your shortfall against a CA$1,000,000.00 penthouse"
       },
       {
         "id": "higher-risk",
@@ -102,7 +102,7 @@
       {
         "id": "lower-risk",
         "title": "Invest in low risk",
-        "description": "Move your portfolio to VAB · lower risk still has risk"
+        "description": "Explore a historical stock investment · individual stocks are not low risk"
       }
     ]
   }

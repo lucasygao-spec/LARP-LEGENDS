@@ -182,3 +182,46 @@
 }
 
 @media(max-width:760px){.world-panel.has-summary{flex:0 0 auto}.has-summary .results-summary{scroll-margin-top:55px}}
+
+/* Historical investment cards share the game's existing card and button styles. */
+.stock-panel, .stock-summary { margin: 16px 0; }
+.stock-panel h2, .stock-summary h2 { font-size: 1.1rem; overflow-wrap: anywhere; }
+.stock-panel p, .stock-summary p { line-height: 1.5; }
+.stock-panel .fine-print, .stock-summary .fine-print { color: var(--muted); }
+.stock-quote { display: grid; gap: 5px; margin: 18px 0; padding: 16px; border-radius: 16px; background: #edf7f1; color: #244f42; }
+.stock-quote strong { font-size: 1.7rem; }
+.stock-quote span { font-size: .85rem; }
+.stock-form { display: grid; gap: 10px; margin: 18px 0; }
+.stock-form label { font-weight: 700; }
+.stock-form p { margin: 0; }
+.stock-summary { padding-bottom: 12px; border-bottom: 1px solid #dce4de; }
+.stock-date { font-size: .8rem; color: var(--muted); margin-bottom: 12px; }
+.stock-balance { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 0; }
+.stock-options { display: grid; gap: 10px; margin: 12px 0; }
+.stock-option { border: 1px solid #258e81; border-radius: 14px; background: #004b48; padding: 13px; }
+.stock-option-row { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: center; gap: 10px; }
+.stock-company { min-width: 0; }
+.stock-company h3 { font-size: .95rem; line-height: 1.4; overflow-wrap: anywhere; }
+.stock-company span { font-size: .75rem; color: var(--muted); }
+.stock-option-row > strong { font-size: .95rem; font-variant-numeric: tabular-nums; }
+.stock-invest { grid-column: 1 / -1; border: 1px solid #34d8b3; border-radius: 9px; padding: 8px 12px; background: #008974; font-weight: 650; }
+.stock-invest:hover:not(:disabled) { background: #00a38a; }
+.stock-holdings { border-radius: 14px; background: #003d3a; padding: 14px; margin: 10px 0 20px; }
+.stock-holdings dl { margin: 10px 0; }
+.stock-holdings dl > div, .stock-company-performance dl > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 12px; padding: 5px 0; font-size: .85rem; }
+.stock-holdings dd, .stock-company-performance dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+.stock-breakdown { display: grid; gap: 12px; margin: 14px 0; }
+.stock-company-performance { border: 1px solid #257e72; border-radius: 10px; padding: 12px; background: #004b48; }
+.stock-company-performance h3 { margin: 0; font-size: .9rem; line-height: 1.4; overflow-wrap: anywhere; }
+.stock-company-performance h3 span { font-weight: 400; color: var(--muted); }
+.stock-company-performance dl { margin: 8px 0 0; }
+.stock-totals { border-top: 1px solid #257e72; padding-top: 8px; }
+.stock-totals dd { font-weight: 700; }
+.stock-return small { display: block; font-size: .75rem; font-weight: 400; }
+.stock-return.gain { color: #80edbf; }
+.stock-return.loss { color: #ffb4bd; }
+.stock-form-actions { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0,1fr); gap: 8px; }
+.stock-form-actions button { margin: 0; text-align: center; justify-content: center; }
+.stock-attribution { display: block; margin-top: 14px; font-size: .65rem; color: var(--muted); }
+.stock-summary .ending-summary dd small { display: block; font-size: .75rem; font-weight: 400; }
+@media(prefers-reduced-motion:reduce){.choice:hover:not(:disabled){transform:none}}
