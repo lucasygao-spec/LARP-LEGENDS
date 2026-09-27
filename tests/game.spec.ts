@@ -114,7 +114,8 @@ test('edit player name and avatar without resetting finances, then persist and c
   await expect(page.locator('.view-tabs, .ledger-view, .world-status')).toHaveCount(0);
   await pick(page,'Start working');await expect(page.locator('.profile')).toContainText('Month 2');
   const finances=await page.locator('.finances').innerText();
-  await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
+  await expect(page.getByRole('progressbar',{name:'Month 2 of 6'})).toHaveAttribute('aria-valuenow','2');
+  await page.getByRole('button',{name:/Edit player, currently Maya/}).click();
   await expect(page.getByRole('dialog',{name:'Edit your player'})).toBeVisible();
   await expect(page.getByLabel('Player name',{exact:true})).toHaveValue('Maya');
   await page.getByLabel('Player name',{exact:true}).fill('   ');await expect(page.getByRole('button',{name:'Save changes',exact:true})).toBeDisabled();
@@ -122,7 +123,7 @@ test('edit player name and avatar without resetting finances, then persist and c
   const avatarLoaded=page.waitForResponse(response=>response.url().endsWith('/models/avatars/generic-male.glb') && response.ok());
   await pick(page,'Save changes');await avatarLoaded;
   await expect(page.locator('.profile h2')).toHaveText('Alex');await expect(page.locator('.profile img')).toHaveAttribute('src','/models/avatars/generic-male.webp');
-  await expect(page.locator('[data-city-ready="true"]')).toHaveAttribute('aria-label',"Campsite with Alex's selected character");
+  await expect(page.locator('[data-city-ready="true"]')).toHaveAttribute('aria-label',"Campsite with a tent, a dog, and Alex's selected character");
   await expect(page.locator('.profile')).toContainText('Month 2');expect(await page.locator('.finances').innerText()).toBe(finances);
   await pick(page,'Settings');await page.getByRole('button',{name:/Change name or avatar/}).click();
   await page.getByLabel('Player name',{exact:true}).fill('Discard me');await page.getByRole('radio',{name:'Chicken Guy',exact:true}).click();await pick(page,'Cancel');
